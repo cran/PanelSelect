@@ -1,0 +1,309 @@
+---
+title: "Sample Selection Models for Panel Data"
+author:
+- name: Jing Peng
+  affiliation: School of Business, University of Connecticut
+  email: jing.peng@uconn.edu
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+link-citations: true
+vignette: >
+  %\VignetteIndexEntry{Sample Selection Models for Panel Data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## 1. Introduction
+
+The [PanelSelect](https://CRAN.R-project.org/package=PanelSelect) package supports a family of panel sample selection models. The models extend the classic Heckman selection framework to panel data with individual random effects, enabling more robust and flexible correction for non-random participation and attrition in panel settings.
+
+The general structure involves a two-stage setup:
+
+-   The first stage is a panel Probit model describing the participation or response decision.
+
+-   The second stage can be a panel linear, Probit, Poisson, or Poisson log-normal model for the outcome.
+
+The package allows two distinct sources of selection bias:
+
+-   Selection on individual effects (i.e., correlation between random effects across equations)
+
+-   Selection on idiosyncratic errors (i.e., contemporaneous correlation of error terms)
+
+These two types of selection can be activiated separately or jointly, providing flexibility for empirical applications.
+
+The likelihood functions for these models are detailed in [Bailey and Peng (2025)](https://www.ssrn.com/abstract=5475626) and [Peng and Van den Bulte (2024)](https://doi.org/10.1287/mnsc.2019.01897). Because they lack closed-form solutions, likelihoods are approximated numerically via Gaussian–Hermite quadrature. Two types of standard errors are available: (1) Hessian-based standard errors and (2) BHHH (Berndt–Hall–Hall–Hausman) standard errors.
+
+Table 1 lists the supported models. Panel count models are supported through a companion package [PanelCount](https://CRAN.R-project.org/package=PanelCount).
+
+```{r Table, echo=FALSE}
+tb = data.frame(
+    Model = c('probitRE_linearRE', 'probitRE_probitRE', 'probitRE_PoissonRE', 'probitRE_PLNRE'),
+    `First Stage` = c(rep('probitRE', 4)),
+    `Second Stage` = c('linearRE', 'ProbitRE', 'PoissonRE', 'PLN_RE'),
+    `Outcome Variable` = c('linear','binary', 'count', 'count'),
+    Package = c('PanelSelect', 'PanelSelect', 'PanelCount', 'PanelCount')
+)
+knitr::kable(tb, col.names = gsub("[.]", " ", names(tb)), caption='**Table 1. Panel Sample Selection Models**')
+```
+
+## 2. Models
+
+Let $\mathbf{w}_{it}$ and $\mathbf{x}_{it}$ represent the *row* vectors of covariates in the selection and outcome equations, respectively, with $\boldsymbol{\alpha}$ and $\boldsymbol{\beta}$ denoting the corresponding *column* vectors of parameters. Define $d_{it}$ as a binary participation or response indicator, and $y_{it}$ as the outcome variable, which is observed only when $d_{it} = 1$. Individuals are indexed by $i = 1, \ldots, N$, and time periods by $t = 1, \ldots, T$. The models supported by the package are summarized below, where “RE” denotes the inclusion of individual random effects.
+
+### 2.1. probitRE_linearRE
+
+First stage (ProbitRE): $$d_{it}   = 1( \mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it} > 0 )$$
+
+Second stage (LinearRE):
+
+$$y_{it}^* = \mathbf{x}_{it} \boldsymbol{\beta}  + \lambda v_i + \sigma\epsilon_{it}$$
+
+Correlation structure:
+
+$$
+\begin{pmatrix}
+u_i \\
+v_i
+\end{pmatrix}
+\sim \mathcal{N} \left(
+\begin{pmatrix}
+0 \\
+0
+\end{pmatrix}
+\begin{pmatrix}
+1 & \rho \\
+\rho & 1
+\end{pmatrix}
+\right),
+\quad
+\begin{pmatrix}
+\varepsilon_{it} \\
+\epsilon_{it}
+\end{pmatrix}
+\sim \mathcal{N} \left(
+\begin{pmatrix}
+0 \\
+0
+\end{pmatrix},
+\begin{pmatrix}
+1 & \tau \\
+\tau & 1
+\end{pmatrix}
+\right).
+$$
+
+Here, $\delta$, $\lambda$, and $\sigma$ are positive parameters capturing the standard deviation of random effects and the second-stage error. The variance of the first-stage error is normalized to one to ensure unique identification of model parameters, consistent with the convention in Probit models.
+
+### 2.2. probitRE_probitRE
+
+First stage (ProbitRE): $$d_{it}   = 1( \mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it} > 0 )$$
+
+Second stage (LinearRE):
+
+$$y_{it}^* = 1( \mathbf{x}_{it} \boldsymbol{\beta}  + \lambda v_i + \epsilon_{it} > 0 )$$
+
+Correlation structure:
+
+$$
+\begin{pmatrix}
+u_i \\
+v_i
+\end{pmatrix}
+\sim \mathcal{N} \left(
+\begin{pmatrix}
+0 \\
+0
+\end{pmatrix}
+\begin{pmatrix}
+1 & \rho \\
+\rho & 1
+\end{pmatrix}
+\right),
+\quad
+\begin{pmatrix}
+\varepsilon_{it} \\
+\epsilon_{it}
+\end{pmatrix}
+\sim \mathcal{N} \left(
+\begin{pmatrix}
+0 \\
+0
+\end{pmatrix},
+\begin{pmatrix}
+1 & \tau \\
+\tau & 1
+\end{pmatrix}
+\right).
+$$
+
+Since both stages are Probit models, the variances of error terms in both stages are fixed to one to ensure model identification.
+
+### 2.3. probitRE_PoissonRE (imported from [PanelCount](https://CRAN.R-project.org/package=PanelCount))
+
+First stage (ProbitRE): $$d_{it}   = 1( \mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it} > 0 )$$
+
+Second stage (PoissonRE): $$E[y_{it}|x_{it},v_i] = exp(\mathbf{x}_{it} \boldsymbol{\beta} + \sigma v_i)$$
+
+Correlation structure:
+
+$$
+\begin{pmatrix}
+u_i \\
+v_i
+\end{pmatrix}
+\sim \mathcal{N} \left(
+\begin{pmatrix}
+0 \\
+0
+\end{pmatrix}
+\begin{pmatrix}
+1 & \rho \\
+\rho & 1
+\end{pmatrix}
+\right).
+$$
+In the second stage, the random effect $v_i$ accounts for unobserved heterogeneity and potential overdispersion in the count outcome. Because the Poisson distribution intrinsically models conditional variance, no additional idiosyncratic error term is introduced in this specification.
+
+### 2.4. probitRE_PLNRE (imported from [PanelCount](https://CRAN.R-project.org/package=PanelCount))
+
+First stage (ProbitRE): $$d_{it}   = 1( \mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it} > 0 )$$
+
+Second stage (PLN_RE): $$E[y_{it}|x_{it},v_i,\epsilon_{it}] = exp(\mathbf{x}_{it} \boldsymbol{\beta}  + \sigma v_i + \gamma\epsilon_{it})$$
+
+Correlation structure:
+
+$$
+\begin{pmatrix}
+u_i \\
+v_i
+\end{pmatrix}
+\sim \mathcal{N} \left(
+\begin{pmatrix}
+0 \\
+0
+\end{pmatrix}
+\begin{pmatrix}
+1 & \rho \\
+\rho & 1
+\end{pmatrix}
+\right),
+\quad
+\begin{pmatrix}
+\varepsilon_{it} \\
+\epsilon_{it}
+\end{pmatrix}
+\sim \mathcal{N} \left(
+\begin{pmatrix}
+0 \\
+0
+\end{pmatrix},
+\begin{pmatrix}
+1 & \tau \\
+\tau & 1
+\end{pmatrix}
+\right).
+$$
+This model introduces an additional random effect at the individual–time level, thereby allowing selection to occur at both the individual and individual–time levels. However, $\epsilon_{it}$ should be interpreted as a random effect rather than as an idiosyncratic error term.
+
+## 3. Examples
+
+After loading the [PanelSelect](https://CRAN.R-project.org/package=PanelSelect) package, type "example(model_name)" to see sample code for each model. The code below runs the *probitRE_linearRE* model on a simulated dataset with the following data generating process (DGP):
+
+$$d_{it}   = 1( x_{it} + u_i  + \varepsilon_{it} > 0 )$$
+
+$$y_{it}^* = x_{it} + v_i +  \epsilon_{it}$$
+
+$$
+\begin{pmatrix}
+u_i \\
+v_i
+\end{pmatrix}
+\sim \mathcal{N} \left(
+\begin{pmatrix}
+0 \\
+0
+\end{pmatrix}
+\begin{pmatrix}
+1 & -0.5 \\
+-0.5 & 1
+\end{pmatrix}
+\right),
+\quad
+\begin{pmatrix}
+\varepsilon_{it} \\
+\epsilon_{it}
+\end{pmatrix}
+\sim \mathcal{N} \left(
+\begin{pmatrix}
+0 \\
+0
+\end{pmatrix},
+\begin{pmatrix}
+1 & 0.5 \\
+0.5 & 1
+\end{pmatrix}
+\right).
+$$
+
+```{r}
+library(PanelSelect)
+library(MASS)
+N = 500
+period = 5
+obs = N*period
+rho = -0.5
+tau = 0.5
+set.seed(100)
+
+re = mvrnorm(N, mu=c(0,0), Sigma=matrix(c(1,rho,rho,1), nrow=2))
+u = rep(re[,1], each=period)
+v = rep(re[,2], each=period)
+e = mvrnorm(obs, mu=c(0,0), Sigma=matrix(c(1,tau,tau,1), nrow=2))
+e1 = e[,1]
+e2 = e[,2]
+
+t = rep(1:period, N)
+id = rep(1:N, each=period)
+w = rnorm(obs)
+z = rnorm(obs)
+x = rnorm(obs)
+d = as.numeric(x + w + u + e1 > 0)
+y = x + w + v + e2
+y[d==0] = NA
+dt = data.frame(id, t, y, x, w, z, d)
+
+# As N increases, the parameter estimates will be more accurate
+m = probitRE_linearRE(d~x+w, y~x+w, 'id', dt, H=10, verbose=-1)
+print(m$estimates, digits=4)
+```
+
+The resulting estimates closely match the true parameter values, confirming the model’s effectiveness in recovering the underlying parameters.
+
+## 4. Notes
+
+This section highlights several practical considerations while using this package.
+
+-   As shown in [Bailey and Peng (2025)](https://www.ssrn.com/abstract=5475626), panel selection models typically achieve stronger identification than their cross-sectional counterparts.
+
+-   The panel need not be balanced. Also, individuals are allowed to make different participation decisions at different time periods.
+
+-   The covariates used in the first-stage and second-stage equations may differ, although excluding a variable from one stage typically requires theoretical justification. When in doubt, it is advisable to use the same set of covariates in both stages.
+
+-   The model allows the two correlation parameters $\rho$ and $\tau$ to be turned off separately or jointly.
+
+-   Inputs and output formats for models imported from the [PanelCount](https://CRAN.R-project.org/package=PanelCount) package are somewhat different.
+
+-   When the outcome variable is observed regardless of participation, the [endogeneity](https://CRAN.R-project.org/package=endogeneity) package may be more appropriate, although it currently focuses on cross-sectional settings.
+
+## Citations
+
+Bailey, M., & Peng, J. (2025). A Random Effects Model of Non-Ignorable Nonresponse in Panel Survey Data. Available at SSRN <https://www.ssrn.com/abstract=5475626>
+
+Peng, J., & Van den Bulte, C. (2024). Participation vs. Effectiveness in Sponsored Tweet Campaigns: A Quality-Quantity Conundrum. *Management Science*, 70(11):7345-8215. Available at <https://doi.org/10.1287/mnsc.2019.01897>
