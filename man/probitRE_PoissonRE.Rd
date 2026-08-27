@@ -152,9 +152,9 @@ print(m$estimates, digits=4)
 }
 }
 \seealso{
-Other PanelSelect: 
-\code{\link{probitRE_PLNRE}()},
-\code{\link{probitRE_linearRE}()},
-\code{\link{probitRE_probitRE}()}
+Other PanelSelect:
+\code{\link[=probitRE_PLNRE]{probitRE_PLNRE()}},
+\code{\link[=probitRE_linearRE]{probitRE_linearRE()}},
+\code{\link[=probitRE_probitRE]{probitRE_probitRE()}}
 }
 \concept{PanelSelect}

@@ -99,11 +99,11 @@ w and x can be the same set of variables. Identification can be weak if w are no
 library(PanelSelect)
 library(MASS)
 N = 200
-period = 5
+period = 3
 obs = N*period
 rho = 0.5
 tau = 0
-set.seed(100)
+set.seed(1)
 
 re = mvrnorm(N, mu=c(0,0), Sigma=matrix(c(1,rho,rho,1), nrow=2))
 u = rep(re[,1], each=period)
@@ -123,16 +123,17 @@ y[d==0] = NA
 dt = data.frame(id, t, y, x, w, z, d)
 
 # As N increases, the parameter estimates will be more accurate
-m = probitRE_linearRE(d~x+w, y~x+w, 'id', dt, H=10, verbose=-1)
+# Do not turn off tau if you believe it is nonzero
+m = probitRE_linearRE(d~x+w, y~x+w, 'id', dt, H=10, tau_off=TRUE, verbose=-1)
 print(m$estimates, digits=4)
 }
 \references{
 Bailey, M., & Peng, J. (2025). A Random Effects Model of Non-Ignorable Nonresponse in Panel Survey Data. Available at SSRN \url{https://www.ssrn.com/abstract=5475626}
 }
 \seealso{
-Other PanelSelect: 
-\code{\link{probitRE_PLNRE}()},
-\code{\link{probitRE_PoissonRE}()},
-\code{\link{probitRE_probitRE}()}
+Other PanelSelect:
+\code{\link[=probitRE_PLNRE]{probitRE_PLNRE()}},
+\code{\link[=probitRE_PoissonRE]{probitRE_PoissonRE()}},
+\code{\link[=probitRE_probitRE]{probitRE_probitRE()}}
 }
 \concept{PanelSelect}

@@ -148,14 +148,30 @@ Gradient_probitRE_linearRE = function(par,y,d,x,w,group,H=20,rho_off=FALSE, tau_
   return(gradient)
 }
 
-predict_probitRE_linearRE = function(par,var,form_probit,form_linear,data){
+#' Prediction Function for probitRE_linearRE Models
+#'
+#' Generates predictions from a fitted \code{probitRE_linearRE} model.
+#'
+#' @param model A fitted \code{probitRE_linearRE} model object.
+#' @param newdata A data frame containing the covariates used for prediction.
+#'
+#' @return A list of predicted values.
+#'
+#' @export
+#' @md
+predict_probitRE_linearRE = function(model, newdata){
+  par = model$estimates[, 1]
+  var = model$var
+  form_probit = model$form_probit
+  form_linear = model$form_linear
+
   # parse linear formula
-  mf = model.frame(form_linear, data=data, na.action=NULL, drop.unused.levels=TRUE)
+  mf = model.frame(form_linear, data=newdata, na.action=NULL, drop.unused.levels=TRUE)
   y = model.response(mf, "numeric")
   x = model.matrix(attr(mf, "terms"), data=mf)
 
   # parse probit formula
-  mf2 = model.frame(form_probit, data=data, na.action=NULL, drop.unused.levels=TRUE)
+  mf2 = model.frame(form_probit, data=newdata, na.action=NULL, drop.unused.levels=TRUE)
   d = model.response(mf2, "numeric")
   w = model.matrix(attr(mf2, "terms"), data=mf2)
 
@@ -254,11 +270,11 @@ predict_probitRE_linearRE = function(par,var,form_probit,form_linear,data){
 #' library(PanelSelect)
 #' library(MASS)
 #' N = 200
-#' period = 5
+#' period = 3
 #' obs = N*period
 #' rho = 0.5
 #' tau = 0
-#' set.seed(100)
+#' set.seed(1)
 #'
 #' re = mvrnorm(N, mu=c(0,0), Sigma=matrix(c(1,rho,rho,1), nrow=2))
 #' u = rep(re[,1], each=period)
@@ -278,7 +294,8 @@ predict_probitRE_linearRE = function(par,var,form_probit,form_linear,data){
 #' dt = data.frame(id, t, y, x, w, z, d)
 #'
 #' # As N increases, the parameter estimates will be more accurate
-#' m = probitRE_linearRE(d~x+w, y~x+w, 'id', dt, H=10, verbose=-1)
+#' # Do not turn off tau if you believe it is nonzero
+#' m = probitRE_linearRE(d~x+w, y~x+w, 'id', dt, H=10, tau_off=TRUE, verbose=-1)
 #' print(m$estimates, digits=4)
 #' @export
 #' @family PanelSelect
@@ -359,7 +376,9 @@ probitRE_linearRE = function(form_probit, form_linear, id.name, data=NULL, par=N
     trans_types = trans_types[-length(trans_types)]
   }
   res = transCompile(res, trans_vars, trans_types)
-  res$predict = predict_probitRE_linearRE(res$estimates[, 1], res$var, form_probit, form_linear, data_original)
+  res$form_probit = form_probit
+  res$form_linear = form_linear
+  res$predict = predict_probitRE_linearRE(res, data_original)
 
   # Need to estimate probitRE and linearRE models to make the test meaningful
   # res$LR_stat = 2 * ( res$LL - logLik(est_linear) - logLik(est_probit) )

@@ -1,7 +1,7 @@
 Package: PanelSelect
 Type: Package
 Title: Panel Sample Selection Models
-Version: 1.0.0
+Version: 1.0.1
 Authors@R: person(given = "Jing",
                     family = "Peng",
                     role = c("aut", "cre"),
@@ -15,9 +15,9 @@ Imports: Rcpp, PanelCount, pbivnorm, maxLik, statmod, MASS, data.table,
         pbv
 LinkingTo: Rcpp, RcppArmadillo
 Suggests: knitr, rmarkdown
-RoxygenNote: 7.3.3
+Config/roxygen2/version: 8.0.0
 NeedsCompilation: yes
-Packaged: 2025-10-21 06:19:09 UTC; pengj
+Packaged: 2026-08-26 21:13:12 UTC; pengj
 Author: Jing Peng [aut, cre]
 Repository: CRAN
-Date/Publication: 2025-10-25 12:00:02 UTC
+Date/Publication: 2026-08-27 05:10:46 UTC

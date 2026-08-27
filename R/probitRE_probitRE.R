@@ -152,14 +152,30 @@ Gradient_probitRE_probitRE = function(par,y,d,x,w,group,H=20,rho_off=FALSE, tau_
   return(gradient)
 }
 
-predict_probitRE_probitRE = function(par,var,probit1,probit2,data){
+#' Prediction Function for probitRE_probitRE Models
+#'
+#' Generates predictions from a fitted \code{probitRE_probitRE} model.
+#'
+#' @param model A fitted \code{probitRE_probitRE} model object.
+#' @param newdata A data frame containing the covariates used for prediction.
+#'
+#' @return A list of predicted values.
+#'
+#' @export
+#' @md
+predict_probitRE_probitRE = function(model, newdata){
+  par = model$estimates[, 1]
+  var = model$var
+  probit1 = model$formula_probit1
+  probit2 = model$formula_probit2
+
   # parse outcome formula
-  mf = model.frame(probit2, data=data, na.action=NULL, drop.unused.levels=TRUE)
+  mf = model.frame(probit2, data=newdata, na.action=NULL, drop.unused.levels=TRUE)
   y = model.response(mf, "numeric")
   x = model.matrix(attr(mf, "terms"), data=mf)
 
   # parse selection formula
-  mf2 = model.frame(probit1, data=data, na.action=NULL, drop.unused.levels=TRUE)
+  mf2 = model.frame(probit1, data=newdata, na.action=NULL, drop.unused.levels=TRUE)
   d = model.response(mf2, "numeric")
   w = model.matrix(attr(mf2, "terms"), data=mf2)
 
@@ -255,12 +271,12 @@ predict_probitRE_probitRE = function(par,var,probit1,probit2,data){
 #' @examples
 #' library(PanelSelect)
 #' library(MASS)
-#' N = 150
-#' period = 5
+#' N = 200
+#' period = 3
 #' obs = N*period
 #' rho = 0.5
 #' tau = 0
-#' set.seed(100)
+#' set.seed(1)
 #'
 #' re = mvrnorm(N, mu=c(0,0), Sigma=matrix(c(1,rho,rho,1), nrow=2))
 #' u = rep(re[,1], each=period)
@@ -280,7 +296,8 @@ predict_probitRE_probitRE = function(par,var,probit1,probit2,data){
 #' dt = data.frame(id, t, y, x, w, z, d)
 #'
 #' # As N increases, the parameter estimates will be more accurate
-#' m = probitRE_probitRE(d~x+w, y~x+w, 'id', dt, H=10, verbose=-1)
+#' # Do not turn off tau if you believe it is nonzero
+#' m = probitRE_probitRE(d~x+w, y~x+w, 'id', dt, H=10, tau_off=TRUE, verbose=-1)
 #' print(m$estimates, digits=4)
 #' @export
 #' @family PanelSelect
@@ -361,7 +378,10 @@ probitRE_probitRE = function(probit1, probit2, id.name, data=NULL, par=NULL, met
     trans_types = trans_types[-length(trans_types)]
   }
   res = transCompile(res, trans_vars, trans_types)
-  res$predict = predict_probitRE_probitRE(res$estimates[, 1], res$var, probit1, probit2, data_original)
+  res$formula_probit1 = probit1
+  res$formula_probit2 = probit2
+  # res$predict = predict_probitRE_probitRE(res$estimates[, 1], res$var, probit1, probit2, data_original)
+  res$predict = predict_probitRE_probitRE(res, data_original)
 
   # Need to estimate probitRE and probitRE models to make the test meaningful
   # res$LR_stat = 2 * ( res$LL - logLik(est_linear) - logLik(est_probit) )

@@ -6,7 +6,7 @@
 #' library(MASS)
 #' library(PanelSelect)
 #' set.seed(1)
-#' N = 500
+#' N = 400
 #' periods = 5
 #' rho = 0.5
 #' tau = 0
@@ -34,7 +34,7 @@
 #' dt = data.frame(id,time,x,w,z,y)
 #'
 #' # As N increases, the parameter estimates will be more accurate
-#' m = probitRE_PLNRE(z~x+w, y~x, data=sim, id.name='id', verbose=-1)
+#' m = probitRE_PLNRE(z~x+w, y~x, data=dt, id.name='id', verbose=-1)
 #' print(m$estimates, digits=4)
 #' }
 #' @export

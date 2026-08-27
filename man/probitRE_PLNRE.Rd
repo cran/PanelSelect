@@ -139,7 +139,7 @@ This function is imported from the *PanelCount* package (see \link[PanelCount]{P
 library(MASS)
 library(PanelSelect)
 set.seed(1)
-N = 500
+N = 400
 periods = 5
 rho = 0.5
 tau = 0
@@ -167,7 +167,7 @@ y[z==0] = NA
 dt = data.frame(id,time,x,w,z,y)
 
 # As N increases, the parameter estimates will be more accurate
-m = probitRE_PLNRE(z~x+w, y~x, data=sim, id.name='id', verbose=-1)
+m = probitRE_PLNRE(z~x+w, y~x, data=dt, id.name='id', verbose=-1)
 print(m$estimates, digits=4)
 }
 }
@@ -178,9 +178,9 @@ print(m$estimates, digits=4)
 }
 }
 \seealso{
-Other PanelSelect: 
-\code{\link{probitRE_PoissonRE}()},
-\code{\link{probitRE_linearRE}()},
-\code{\link{probitRE_probitRE}()}
+Other PanelSelect:
+\code{\link[=probitRE_PoissonRE]{probitRE_PoissonRE()}},
+\code{\link[=probitRE_linearRE]{probitRE_linearRE()}},
+\code{\link[=probitRE_probitRE]{probitRE_probitRE()}}
 }
 \concept{PanelSelect}
