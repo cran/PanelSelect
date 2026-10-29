@@ -11,91 +11,127 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// matVecProd
-NumericMatrix matVecProd(NumericMatrix m, NumericVector v);
-RcppExport SEXP _PanelSelect_matVecProd(SEXP mSEXP, SEXP vSEXP) {
+// group_sum_cpp
+arma::mat group_sum_cpp(const arma::mat& x, const arma::vec& ptr);
+RcppExport SEXP _PanelSelect_group_sum_cpp(SEXP xSEXP, SEXP ptrSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type m(mSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type v(vSEXP);
-    rcpp_result_gen = Rcpp::wrap(matVecProd(m, v));
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type ptr(ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(group_sum_cpp(x, ptr));
     return rcpp_result_gen;
 END_RCPP
 }
-// matVecProdSum
-NumericMatrix matVecProdSum(NumericMatrix m, NumericVector ext, NumericVector v, NumericVector group);
-RcppExport SEXP _PanelSelect_matVecProdSum(SEXP mSEXP, SEXP extSEXP, SEXP vSEXP, SEXP groupSEXP) {
+// group_weighted_design_cpp
+arma::mat group_weighted_design_cpp(const arma::mat& x, const arma::mat& weights, const arma::vec& ptr, const arma::mat& mixture, bool collapse);
+RcppExport SEXP _PanelSelect_group_weighted_design_cpp(SEXP xSEXP, SEXP weightsSEXP, SEXP ptrSEXP, SEXP mixtureSEXP, SEXP collapseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type m(mSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type ext(extSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type v(vSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type group(groupSEXP);
-    rcpp_result_gen = Rcpp::wrap(matVecProdSum(m, ext, v, group));
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type ptr(ptrSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type mixture(mixtureSEXP);
+    Rcpp::traits::input_parameter< bool >::type collapse(collapseSEXP);
+    rcpp_result_gen = Rcpp::wrap(group_weighted_design_cpp(x, weights, ptr, mixture, collapse));
     return rcpp_result_gen;
 END_RCPP
 }
-// matVecProdSumExt
-NumericMatrix matVecProdSumExt(NumericMatrix m, NumericVector ext, NumericVector ext2, NumericVector v, NumericVector group);
-RcppExport SEXP _PanelSelect_matVecProdSumExt(SEXP mSEXP, SEXP extSEXP, SEXP ext2SEXP, SEXP vSEXP, SEXP groupSEXP) {
+// logsum_weights_cpp
+Rcpp::List logsum_weights_cpp(const arma::vec& terms, double rows);
+RcppExport SEXP _PanelSelect_logsum_weights_cpp(SEXP termsSEXP, SEXP rowsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type m(mSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type ext(extSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type ext2(ext2SEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type v(vSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type group(groupSEXP);
-    rcpp_result_gen = Rcpp::wrap(matVecProdSumExt(m, ext, ext2, v, group));
+    Rcpp::traits::input_parameter< const arma::vec& >::type terms(termsSEXP);
+    Rcpp::traits::input_parameter< double >::type rows(rowsSEXP);
+    rcpp_result_gen = Rcpp::wrap(logsum_weights_cpp(terms, rows));
     return rcpp_result_gen;
 END_RCPP
 }
-// groupProd
-NumericMatrix groupProd(NumericVector v, NumericVector group);
-RcppExport SEXP _PanelSelect_groupProd(SEXP vSEXP, SEXP groupSEXP) {
+// logsum_score_cpp
+arma::mat logsum_score_cpp(const arma::vec& log_term, const arma::mat& score, double rows_input);
+RcppExport SEXP _PanelSelect_logsum_score_cpp(SEXP log_termSEXP, SEXP scoreSEXP, SEXP rows_inputSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type v(vSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type group(groupSEXP);
-    rcpp_result_gen = Rcpp::wrap(groupProd(v, group));
+    Rcpp::traits::input_parameter< const arma::vec& >::type log_term(log_termSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type score(scoreSEXP);
+    Rcpp::traits::input_parameter< double >::type rows_input(rows_inputSEXP);
+    rcpp_result_gen = Rcpp::wrap(logsum_score_cpp(log_term, score, rows_input));
     return rcpp_result_gen;
 END_RCPP
 }
-// groupSum
-NumericMatrix groupSum(NumericVector v, NumericVector group);
-RcppExport SEXP _PanelSelect_groupSum(SEXP vSEXP, SEXP groupSEXP) {
+// bilinear_reduce_cpp
+Rcpp::List bilinear_reduce_cpp(const arma::vec& a, const arma::vec& b, const arma::vec& x, const arma::vec& y, double cross, bool moments);
+RcppExport SEXP _PanelSelect_bilinear_reduce_cpp(SEXP aSEXP, SEXP bSEXP, SEXP xSEXP, SEXP ySEXP, SEXP crossSEXP, SEXP momentsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type v(vSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type group(groupSEXP);
-    rcpp_result_gen = Rcpp::wrap(groupSum(v, group));
+    Rcpp::traits::input_parameter< const arma::vec& >::type a(aSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type b(bSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type cross(crossSEXP);
+    Rcpp::traits::input_parameter< bool >::type moments(momentsSEXP);
+    rcpp_result_gen = Rcpp::wrap(bilinear_reduce_cpp(a, b, x, y, cross, moments));
     return rcpp_result_gen;
 END_RCPP
 }
-// groupSumMat
-NumericMatrix groupSumMat(NumericMatrix m, NumericVector group);
-RcppExport SEXP _PanelSelect_groupSumMat(SEXP mSEXP, SEXP groupSEXP) {
+// bilinear_cells_cpp
+arma::mat bilinear_cells_cpp(const arma::vec& a, const arma::vec& b, const arma::vec& x, const arma::vec& y, double cross, const arma::mat& score_a, const arma::mat& score_b, const arma::vec& cross_score, const arma::vec& cell_a, const arma::vec& cell_b, double ncells_a, double ncells_b);
+RcppExport SEXP _PanelSelect_bilinear_cells_cpp(SEXP aSEXP, SEXP bSEXP, SEXP xSEXP, SEXP ySEXP, SEXP crossSEXP, SEXP score_aSEXP, SEXP score_bSEXP, SEXP cross_scoreSEXP, SEXP cell_aSEXP, SEXP cell_bSEXP, SEXP ncells_aSEXP, SEXP ncells_bSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type m(mSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type group(groupSEXP);
-    rcpp_result_gen = Rcpp::wrap(groupSumMat(m, group));
+    Rcpp::traits::input_parameter< const arma::vec& >::type a(aSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type b(bSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type cross(crossSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type score_a(score_aSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type score_b(score_bSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type cross_score(cross_scoreSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type cell_a(cell_aSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type cell_b(cell_bSEXP);
+    Rcpp::traits::input_parameter< double >::type ncells_a(ncells_aSEXP);
+    Rcpp::traits::input_parameter< double >::type ncells_b(ncells_bSEXP);
+    rcpp_result_gen = Rcpp::wrap(bilinear_cells_cpp(a, b, x, y, cross, score_a, score_b, cross_score, cell_a, cell_b, ncells_a, ncells_b));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mixture_moments_cpp
+Rcpp::List mixture_moments_cpp(const arma::vec& terms, const arma::mat& gradient, const arma::mat& hessian, const arma::mat& third, double rows, int q_input);
+RcppExport SEXP _PanelSelect_mixture_moments_cpp(SEXP termsSEXP, SEXP gradientSEXP, SEXP hessianSEXP, SEXP thirdSEXP, SEXP rowsSEXP, SEXP q_inputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type terms(termsSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type gradient(gradientSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type hessian(hessianSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type third(thirdSEXP);
+    Rcpp::traits::input_parameter< double >::type rows(rowsSEXP);
+    Rcpp::traits::input_parameter< int >::type q_input(q_inputSEXP);
+    rcpp_result_gen = Rcpp::wrap(mixture_moments_cpp(terms, gradient, hessian, third, rows, q_input));
+    return rcpp_result_gen;
+END_RCPP
+}
+// row_contract_cpp
+arma::mat row_contract_cpp(const arma::mat& score, const arma::mat& derivative, int p_input);
+RcppExport SEXP _PanelSelect_row_contract_cpp(SEXP scoreSEXP, SEXP derivativeSEXP, SEXP p_inputSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type score(scoreSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type derivative(derivativeSEXP);
+    Rcpp::traits::input_parameter< int >::type p_input(p_inputSEXP);
+    rcpp_result_gen = Rcpp::wrap(row_contract_cpp(score, derivative, p_input));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_PanelSelect_matVecProd", (DL_FUNC) &_PanelSelect_matVecProd, 2},
-    {"_PanelSelect_matVecProdSum", (DL_FUNC) &_PanelSelect_matVecProdSum, 4},
-    {"_PanelSelect_matVecProdSumExt", (DL_FUNC) &_PanelSelect_matVecProdSumExt, 5},
-    {"_PanelSelect_groupProd", (DL_FUNC) &_PanelSelect_groupProd, 2},
-    {"_PanelSelect_groupSum", (DL_FUNC) &_PanelSelect_groupSum, 2},
-    {"_PanelSelect_groupSumMat", (DL_FUNC) &_PanelSelect_groupSumMat, 2},
+    {"_PanelSelect_group_sum_cpp", (DL_FUNC) &_PanelSelect_group_sum_cpp, 2},
+    {"_PanelSelect_group_weighted_design_cpp", (DL_FUNC) &_PanelSelect_group_weighted_design_cpp, 5},
+    {"_PanelSelect_logsum_weights_cpp", (DL_FUNC) &_PanelSelect_logsum_weights_cpp, 2},
+    {"_PanelSelect_logsum_score_cpp", (DL_FUNC) &_PanelSelect_logsum_score_cpp, 3},
+    {"_PanelSelect_bilinear_reduce_cpp", (DL_FUNC) &_PanelSelect_bilinear_reduce_cpp, 6},
+    {"_PanelSelect_bilinear_cells_cpp", (DL_FUNC) &_PanelSelect_bilinear_cells_cpp, 12},
+    {"_PanelSelect_mixture_moments_cpp", (DL_FUNC) &_PanelSelect_mixture_moments_cpp, 6},
+    {"_PanelSelect_row_contract_cpp", (DL_FUNC) &_PanelSelect_row_contract_cpp, 3},
     {NULL, NULL, 0}
 };
 

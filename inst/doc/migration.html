@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Migrating from PanelSelect 1.0.1 to 2.0.0</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+<style type="text/css">
+p code, td code, th code, li code {
+overflow-wrap: anywhere;
+white-space: normal;
+}
+pre {
+max-width: 100%;
+overflow-x: auto;
+box-sizing: border-box;
+}
+pre code {
+overflow-wrap: normal;
+white-space: pre;
+word-break: normal;
+}
+table {
+max-width: 100%;
+}
+caption {
+caption-side: top;
+padding: 0 0 0.6em;
+text-align: center;
+font-style: normal;
+font-weight: 600;
+color: #333;
+}
+
+.table-scroll {
+max-width: 100%;
+overflow-x: auto;
+margin: 1em 0;
+}
+.table-scroll table {
+min-width: 620px;
+}
+
+.method-comparison table {
+width: 100%;
+table-layout: fixed;
+}
+.method-comparison col:first-child { width: 36% !important; }
+.method-comparison col:nth-child(2) { width: 10% !important; }
+.method-comparison col:nth-child(n+3) { width: 18% !important; }
+.method-comparison th:not(:first-child),
+.method-comparison td:not(:first-child) { text-align: center !important; }
+.table-scroll:focus-visible {
+outline: 2px solid #366888;
+outline-offset: 2px;
+}
+
+.table-scroll .model-capabilities {
+width: 100%;
+min-width: 520px;
+table-layout: fixed;
+border-collapse: collapse;
+}
+.model-capabilities .model-column { width: 34%; }
+.model-capabilities .family-column { width: 20%; }
+.model-capabilities th,
+.model-capabilities td {
+padding: 0.6em 0.7em;
+text-align: center;
+vertical-align: middle;
+border-top: 1px solid #aaa;
+border-bottom: 1px solid #aaa;
+}
+.model-capabilities thead th {
+border-top: 2px solid #888;
+border-bottom: 2px solid #888;
+}
+.model-capabilities tbody th,
+.model-capabilities tbody td { background: #fff; }
+.model-capabilities th:first-child { text-align: left; }
+.model-capabilities tbody th[scope="row"] { font-weight: normal; }
+.model-capabilities .model-panel th {
+padding-top: 0.7em;
+padding-bottom: 0.7em;
+text-align: left;
+background: #e9eef2;
+border-top: 1px solid #888;
+border-bottom: 1px solid #aaa;
+}
+.MathJax_Display {
+max-width: 100%;
+overflow-x: auto;
+overflow-y: hidden;
+padding: 0.35em 0;
+}
+
+@media (max-width: 600px) {
+.MathJax_Display {
+text-align: left !important;
+}
+}
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Migrating from PanelSelect 1.0.1 to
+2.0.0</h1>
+
+
+
+<p>The main change is one fitting function, <code>panel_select()</code>,
+with common controls and standard fitted-object methods. This guide maps
+the four panel-selection functions in 1.0.1 to version 2.0.0 and
+highlights changes that can affect results.</p>
+<p><span id="saved-objects"></span></p>
+<p>Refit saved 1.0.1 analyses from their original data. Their result
+lists are not current <code>panelselect</code> objects and cannot be
+passed directly to the new methods.</p>
+<div id="function-map" class="section level2">
+<h2>1. Update the fitting call</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Fitting function changes">
+<table>
+<caption>Table 1. Replace model-specific functions with one fitting
+interface</caption>
+<thead>
+<tr class="header">
+<th align="left">Outcome</th>
+<th align="left">Function in 1.0.1</th>
+<th align="left">Current <code>panel_select()</code> family</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Linear</td>
+<td align="left"><code>probitRE_linearRE()</code></td>
+<td align="left"><code>&quot;linear&quot;</code></td>
+</tr>
+<tr class="even">
+<td align="left">Binary</td>
+<td align="left"><code>probitRE_probitRE()</code></td>
+<td align="left"><code>&quot;probit&quot;</code></td>
+</tr>
+<tr class="odd">
+<td align="left">Poisson</td>
+<td align="left"><code>probitRE_PoissonRE()</code></td>
+<td align="left"><code>&quot;poisson&quot;</code></td>
+</tr>
+<tr class="even">
+<td align="left">Poisson-lognormal</td>
+<td align="left"><code>probitRE_PLNRE()</code></td>
+<td align="left"><code>&quot;pln&quot;</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The <strong>outcome formula now comes first</strong>, followed by
+selection, data, ID and family. Named arguments avoid mistakes when
+translating old positional calls. For example, using <code>dat</code>
+from the <a href="vignette.html#fit">main vignette</a>:</p>
+<p><span id="worked-examples"></span> <span id="linear-selection"></span></p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># PanelSelect 1.0.1</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>old <span class="ot">=</span> <span class="fu">probitRE_linearRE</span>(d <span class="sc">~</span> x <span class="sc">+</span> w, y <span class="sc">~</span> x <span class="sc">+</span> w, <span class="at">id.name =</span> <span class="st">&quot;id&quot;</span>, <span class="at">data =</span> dat)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># PanelSelect 2.0.0</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>fit <span class="ot">=</span> <span class="fu">panel_select</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">outcome =</span> y <span class="sc">~</span> x <span class="sc">+</span> w,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">selection =</span> d <span class="sc">~</span> x <span class="sc">+</span> w,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">data =</span> dat,</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="at">id =</span> <span class="st">&quot;id&quot;</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="at">family =</span> <span class="st">&quot;linear&quot;</span>)</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="fu">summary</span>(fit)</span></code></pre></div>
+<p><span id="models-without-selection"></span></p>
+<p>The same interface also fits cross-sectional Linear, binary and PLN
+selection models with <code>id = NULL</code>, and standalone panel
+probit, Poisson and PLN models with <code>selection = NULL</code>. Keep
+unselected rows in selection models; their outcome may be
+<code>NA</code>.</p>
+</div>
+<div id="argument-map" class="section level2">
+<h2>2. Translate settings and parameter names</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Argument and control changes">
+<table>
+<caption>Table 2. Common argument and control changes</caption>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Setting in 1.0.1</th>
+<th align="left">Current equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>id.name = &quot;id&quot;</code></td>
+<td align="left"><code>id = &quot;id&quot;</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>rho_off = TRUE</code> (Linear/binary);
+<code>disable_rho = TRUE</code> (PLN)</td>
+<td align="left"><code>fixed = c(cor_re = 0)</code></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>tau_off = TRUE</code> (Linear/binary);
+<code>disable_tau = TRUE</code> (PLN)</td>
+<td align="left"><code>fixed = c(cor_error = 0)</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>rho.init</code>, <code>tau.init</code>, or
+supplied parameter values</td>
+<td align="left">Named natural-scale values in <code>start</code>, using
+Table 3</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>H</code> (Linear/binary)</td>
+<td align="left"><code>control = panel_control(quadrature = &quot;gh&quot;, nodes = H)</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>method</code>, <code>reltol</code>,
+<code>factr</code>, <code>verbose</code></td>
+<td align="left">Arguments of <code>panel_control()</code>; use
+<code>trace</code> instead of <code>verbose</code></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>use.optim = FALSE</code> (Linear/binary
+default)</td>
+<td align="left"><code>control = panel_control(optimizer = &quot;maxLik&quot;)</code>;
+the current default is <code>optim()</code> with BFGS</td>
+</tr>
+<tr class="even">
+<td align="left"><code>se_type = &quot;BHHH&quot;</code> or <code>&quot;Hessian&quot;</code>
+(count models)</td>
+<td align="left"><code>vcov = &quot;opg&quot;</code> or
+<code>vcov = &quot;observed&quot;</code></td>
+</tr>
+<tr class="odd">
+<td align="left">Count-model <code>offset_w_name</code>,
+<code>offset_x_name</code></td>
+<td align="left"><code>offset()</code> terms in the selection and
+outcome formulas</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><span id="count-selection-and-its-likelihood-ratio-test"></span>
+<span id="offsets-and-new-data"></span></p>
+<p>For count models, old <code>H = c(h1, h2)</code> becomes
+<code>nodes = c(selection = h2, outcome = h1)</code>. PLN also uses
+<code>observation_nodes = h2</code>. This preserves the intended orders,
+not identical numerical results. The current defaults are fixed GH with
+10 nodes per person effect and 20 nodes for PLN’s separate observation
+integral.</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Parameter name changes">
+<table>
+<caption>Table 3. Names used by coefficients, starting values and
+restrictions</caption>
+<colgroup>
+<col width="25%" />
+<col width="25%" />
+<col width="25%" />
+<col width="25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Parameter</th>
+<th align="left">1.0.1 Linear/binary</th>
+<th align="left">1.0.1 count models</th>
+<th align="left">Current name</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Selection coefficients</td>
+<td align="left"><code>probit.&lt;column&gt;</code> or
+<code>probit1.&lt;column&gt;</code></td>
+<td align="left">Selection-equation column names</td>
+<td align="left"><code>selection.&lt;column&gt;</code></td>
+</tr>
+<tr class="even">
+<td align="left">Outcome coefficients</td>
+<td align="left"><code>linear.&lt;column&gt;</code> or
+<code>probit2.&lt;column&gt;</code></td>
+<td align="left">Outcome-equation column names</td>
+<td align="left"><code>outcome.&lt;column&gt;</code></td>
+</tr>
+<tr class="odd">
+<td align="left">Selection person-effect SD</td>
+<td align="left"><code>delta</code></td>
+<td align="left"><code>delta</code></td>
+<td align="left"><code>sd_re_selection</code></td>
+</tr>
+<tr class="even">
+<td align="left">Outcome person-effect SD</td>
+<td align="left"><code>lambda</code></td>
+<td align="left"><code>sigma</code></td>
+<td align="left"><code>sd_re_outcome</code></td>
+</tr>
+<tr class="odd">
+<td align="left">Linear residual / PLN occasion SD</td>
+<td align="left"><code>sigma</code> (Linear)</td>
+<td align="left"><code>gamma</code> (PLN)</td>
+<td align="left"><code>sd_error</code></td>
+</tr>
+<tr class="even">
+<td align="left">Person-effect correlation</td>
+<td align="left"><code>rho</code></td>
+<td align="left"><code>rho</code></td>
+<td align="left"><code>cor_re</code></td>
+</tr>
+<tr class="odd">
+<td align="left">Occasion-error correlation</td>
+<td align="left"><code>tau</code></td>
+<td align="left"><code>tau</code> (PLN)</td>
+<td align="left"><code>cor_error</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code>start</code> accepts any subset of the current names;
+<code>init</code> supplies the rest. <code>fixed</code> holds named
+parameters at their supplied values. Supply natural-scale values, not
+optimizer coordinates. Free SDs must start positive; fixed SDs may be
+zero where allowed. Correlations must lie strictly between −1 and 1.</p>
+<p>The Linear/binary functions in 1.0.1 ignored <code>par</code>;
+current <code>start</code> values are honored. When transferring
+estimates, use the old <code>estimates</code> table and map its names
+explicitly. Do not copy raw <code>$par</code> or <code>$estimate</code>
+indiscriminately: their scales differed across the old functions.</p>
+</div>
+<div id="output-map" class="section level2">
+<h2>3. Read results through methods</h2>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Result extraction changes">
+<table>
+<caption>Table 4. Replace direct component access with fitted-object
+methods</caption>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Result in 1.0.1</th>
+<th align="left">Current method</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><code>$estimates[, &quot;estimate&quot;]</code></td>
+<td align="left"><code>coef(fit)</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>$estimates</code></td>
+<td align="left"><code>summary(fit)$coefficients</code>;
+<code>confint(fit)</code> for intervals</td>
+</tr>
+<tr class="odd">
+<td align="left"><code>$var</code>, <code>$var_bhhh</code>,
+<code>$var_hessian</code>, <code>$se</code></td>
+<td align="left"><code>vcov(fit)</code>; SEs in
+<code>summary(fit)$coefficients[, &quot;se&quot;]</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>$LL</code>, <code>$maximum</code>,
+<code>$value</code></td>
+<td align="left"><code>logLik(fit)</code></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>$AIC</code>, <code>$BIC</code></td>
+<td align="left"><code>AIC(fit)</code>; use
+<code>BIC(fit, unit = &quot;observations&quot;)</code> for the old row-count
+convention</td>
+</tr>
+<tr class="even">
+<td align="left"><code>$predict$respond_prob</code>,
+<code>$predict$prob</code></td>
+<td align="left"><code>predict(fit, newdata, type = &quot;selection_probability&quot;)</code></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>$predict$outcome</code>,
+<code>$predict$outcome_prob</code></td>
+<td align="left"><code>predict(fit, newdata, type = &quot;response&quot;)</code></td>
+</tr>
+<tr class="even">
+<td align="left"><code>$predict$actual_outcome</code></td>
+<td align="left"><code>predict(fit, newdata, type = &quot;joint&quot;)</code></td>
+</tr>
+<tr class="odd">
+<td align="left"><code>$predict$pop_mean</code></td>
+<td align="left"><code>predict(fit, newdata, type = &quot;response&quot;, aggregate = TRUE)</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Predictions are requested after fitting; add
+<code>se.fit = TRUE</code> for their standard errors.
+<code>type = &quot;response&quot;</code> is the potential-outcome mean, while
+<code>type = &quot;selected_mean&quot;</code> is the mean among selected
+observations. Population predictions remain the default.
+<code>type = &quot;joint&quot;</code> gives the mean observed contribution,
+counting unselected outcomes as zero. History-conditioned predictions
+require explicit <code>history</code> data and GH/AGH at the applicable
+integration levels.</p>
+<p><code>BIC(fit)</code> now counts independent panels by default. For
+covariance alternatives, request
+<code>vcov(fit, type = &quot;observed&quot;)</code> or
+<code>vcov(fit, type = &quot;opg&quot;)</code> explicitly.</p>
+</div>
+<div id="why-numbers-can-differ" class="section level2">
+<h2>4. Understand changes in results</h2>
+<p>Matching formulas and integration orders does not guarantee the same
+estimates or standard errors as 1.0.1. The main reasons are:</p>
+<ul>
+<li><strong>Starting values.</strong> The current default uses separate
+random-effects models for panel selection. The old Linear/binary default
+used pooled regressions; choose <code>init = &quot;pooled&quot;</code> to use that
+approach. The old count models already used random-effects
+auxiliaries.</li>
+<li><strong>Standard errors.</strong> The default is now
+<code>vcov = &quot;opg&quot;</code>, based on independent-unit score outer
+products. The old Linear/binary functions preferred the inverse Hessian;
+choose <code>vcov = &quot;observed&quot;</code> to request observed information.
+Invalid requested covariance remains unavailable rather than being
+replaced silently.</li>
+<li><strong>Corrected calculations.</strong> Fixes to derivatives,
+parameter transformations and rare-probability calculations can change
+estimates or standard errors. Formula <code>offset()</code> terms
+ignored by the old Linear/binary functions now enter their predictors
+with coefficient one.</li>
+<li><strong>Numerical accuracy.</strong> Adaptive GH and GL provide
+alternatives to fixed GH. Use <code>check_stationarity()</code> and
+<code>check_quadrature()</code> to assess a new fit, and compare
+estimates under common, checked settings. Convergence alone does not
+establish integration accuracy or a global maximum.</li>
+</ul>
+<p>See the <a href="vignette.html#integration-choices">main vignette</a>
+for a short checking workflow, and the <a href="../html/panel_select.html">fitting</a>, <a href="../html/panel_control.html">control</a> and <a href="../html/predict.panelselect.html">prediction</a> help for
+additional options.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

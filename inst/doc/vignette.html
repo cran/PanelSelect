@@ -11,9 +11,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 
-<meta name="date" content="2026-08-26" />
+<meta name="date" content="2026-10-29" />
 
-<title>Sample Selection Models for Panel Data</title>
+<title>Sample Selection Models for Panel and Cross-Sectional Data</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -327,6 +327,101 @@ code > span.al { color: #ff0000; font-weight: bold; }
 code > span.fu { color: #900; font-weight: bold; } 
 code > span.er { color: #a61717; background-color: #e3d2d2; } 
 </style>
+<style type="text/css">
+p code, td code, th code, li code {
+overflow-wrap: anywhere;
+white-space: normal;
+}
+pre {
+max-width: 100%;
+overflow-x: auto;
+box-sizing: border-box;
+}
+pre code {
+overflow-wrap: normal;
+white-space: pre;
+word-break: normal;
+}
+table {
+max-width: 100%;
+}
+caption {
+caption-side: top;
+padding: 0 0 0.6em;
+text-align: center;
+font-style: normal;
+font-weight: 600;
+color: #333;
+}
+
+.table-scroll {
+max-width: 100%;
+overflow-x: auto;
+margin: 1em 0;
+}
+.table-scroll table {
+min-width: 620px;
+}
+
+.method-comparison table {
+width: 100%;
+table-layout: fixed;
+}
+.method-comparison col:first-child { width: 36% !important; }
+.method-comparison col:nth-child(2) { width: 10% !important; }
+.method-comparison col:nth-child(n+3) { width: 18% !important; }
+.method-comparison th:not(:first-child),
+.method-comparison td:not(:first-child) { text-align: center !important; }
+.table-scroll:focus-visible {
+outline: 2px solid #366888;
+outline-offset: 2px;
+}
+
+.table-scroll .model-capabilities {
+width: 100%;
+min-width: 520px;
+table-layout: fixed;
+border-collapse: collapse;
+}
+.model-capabilities .model-column { width: 34%; }
+.model-capabilities .family-column { width: 20%; }
+.model-capabilities th,
+.model-capabilities td {
+padding: 0.6em 0.7em;
+text-align: center;
+vertical-align: middle;
+border-top: 1px solid #aaa;
+border-bottom: 1px solid #aaa;
+}
+.model-capabilities thead th {
+border-top: 2px solid #888;
+border-bottom: 2px solid #888;
+}
+.model-capabilities tbody th,
+.model-capabilities tbody td { background: #fff; }
+.model-capabilities th:first-child { text-align: left; }
+.model-capabilities tbody th[scope="row"] { font-weight: normal; }
+.model-capabilities .model-panel th {
+padding-top: 0.7em;
+padding-bottom: 0.7em;
+text-align: left;
+background: #e9eef2;
+border-top: 1px solid #888;
+border-bottom: 1px solid #aaa;
+}
+.MathJax_Display {
+max-width: 100%;
+overflow-x: auto;
+overflow-y: hidden;
+padding: 0.35em 0;
+}
+
+@media (max-width: 600px) {
+.MathJax_Display {
+text-align: left !important;
+}
+}
+</style>
 
 
 
@@ -338,390 +433,492 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">Sample Selection Models for Panel Data</h1>
+<h1 class="title toc-ignore">Sample Selection Models for Panel and
+Cross-Sectional Data</h1>
 <h4 class="author">Jing Peng</h4>
 <address class="author_afil">
 School of Business, University of
 Connecticut<br><a class="author_email" href="mailto:#"><a href="mailto:jing.peng@uconn.edu" class="email">jing.peng@uconn.edu</a></a>
 </address>
-<h4 class="date">2026-08-26</h4>
+<h4 class="date">2026-10-29</h4>
 
 
 
-<div id="introduction" class="section level2">
+<div id="choose" class="section level2">
 <h2>1. Introduction</h2>
-<p>The <a href="https://CRAN.R-project.org/package=PanelSelect">PanelSelect</a>
-package supports a family of panel sample selection models. The models
-extend the classic Heckman selection framework to panel data with
-individual random effects, enabling more robust and flexible correction
-for non-random participation and attrition in panel settings.</p>
-<p>The general structure involves a two-stage setup:</p>
+<p>PanelSelect provides a unified and flexible framework for sample
+selection models with continuous, binary, and count outcomes in panel
+and cross-sectional data. In particular, it supports a broad family of
+panel selection models, which extend the classic Heckman framework to
+account for persistent unobserved heterogeneity. The package supports
+selection at two levels: the individual level, through correlated random
+effects, and the observation level, through correlated occasion-specific
+shocks. This allows researchers to distinguish non-random selection
+driven by persistent individual characteristics from selection driven by
+temporary shocks. Alongside model estimation, PanelSelect supports
+prediction of population-level outcomes.</p>
+<p>Each selection model combines a probit selection equation with an
+equation for a continuous, binary, or count outcome, estimated jointly
+by maximum likelihood. For panel data, both equations include individual
+random effects to capture persistent unobserved heterogeneity. The
+corresponding likelihoods are detailed in Bailey and Peng (2025) and
+Peng and Van den Bulte (2024). PanelSelect evaluates the required
+integrals using fixed Gauss–Hermite quadrature (the default), adaptive
+Gauss–Hermite quadrature, or Gauss–Legendre quadrature, which can
+improve accuracy in difficult cases but may require substantially more
+computation.</p>
+<p>For data with one observation per individual, the package also
+supports cross-sectional linear, binary, and Poisson-lognormal selection
+models. The remainder of this vignette focuses on the panel models,
+demonstrating how to specify and fit them and assess numerical
+accuracy.</p>
+<div id="supported-models" class="section level3">
+<h3>1.1. Supported models</h3>
+<p>Table 1 summarizes the available models. Panels may be unbalanced,
+and participation may change across occasions.</p>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Supported selection models">
+<table class="model-capabilities">
+<caption id="tab-models">Table 1. Supported sample-selection models</caption>
+<colgroup><col class="model-column"><col class="family-column"><col><col></colgroup>
+<thead>
+<tr><th scope="col">Outcome model</th><th scope="col"><code>family</code></th><th scope="col">Individual-effect<br>correlation</th><th scope="col">Error<br>correlation</th></tr>
+</thead>
+<tbody>
+<tr class="model-panel"><th colspan="4" scope="rowgroup">A. Panel selection</th></tr>
+<tr><th scope="row">Linear RE</th><td><code>&quot;linear&quot;</code></td><td>Yes</td><td>Yes</td></tr>
+<tr><th scope="row">Probit RE</th><td><code>&quot;probit&quot;</code></td><td>Yes</td><td>Yes</td></tr>
+<tr><th scope="row">Poisson RE</th><td><code>&quot;poisson&quot;</code></td><td>Yes</td><td>—</td></tr>
+<tr><th scope="row">Poisson-lognormal RE</th><td><code>&quot;pln&quot;</code></td><td>Yes</td><td>Yes</td></tr>
+</tbody>
+<tbody>
+<tr class="model-panel"><th colspan="4" scope="rowgroup">B. Cross-sectional selection</th></tr>
+<tr><th scope="row">Linear</th><td><code>&quot;linear&quot;</code></td><td>—</td><td>Yes</td></tr>
+<tr><th scope="row">Probit</th><td><code>&quot;probit&quot;</code></td><td>—</td><td>Yes</td></tr>
+<tr><th scope="row">Poisson-lognormal</th><td><code>&quot;pln&quot;</code></td><td>—</td><td>Yes</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Note:</strong> RE means random effects; — indicates an absent
+correlation channel. Standalone probit, Poisson and PLN random-effects
+models are also supported and provide default outcome-coefficient
+starting values for the corresponding panel-selection models.</p>
+</div>
+<div id="changes-since-1-0-1" class="section level3">
+<h3>1.2. What changed since 1.0.1?</h3>
+<p>Version 2.0.0 is a full refactor of the package, developed with
+assistance from Codex and Claude Code. We recommend 2.0.0 for new
+analyses and for refitting analyses conducted with 1.0.1. The four
+original panel-selection families are retained, with improvements that
+matter for everyday use:</p>
 <ul>
-<li><p>The first stage is a panel Probit model describing the
-participation or response decision.</p></li>
-<li><p>The second stage can be a panel linear, Probit, Poisson, or
-Poisson log-normal model for the outcome.</p></li>
+<li><strong>Corrected estimation.</strong> Corrections to likelihood and
+score calculations address some errors that can slightly distort
+parameter estimates and standard errors.</li>
+<li><strong>A unified, user-friendly interface.</strong>
+<code>panel_select()</code> replaces separate model-specific fitting
+functions, with common controls and standard methods such as
+<code>summary()</code>, <code>predict()</code> and
+<code>update()</code>.</li>
+<li><strong>Broader model support.</strong> Cross-sectional selection
+models and standalone binary and count panel models complement the
+original panel-selection families.</li>
+<li><strong>More control over numerical accuracy.</strong> Adaptive
+Gauss–Hermite (AGH) and Gauss–Legendre (GL) supplement fixed
+Gauss–Hermite (GH). Together with explicit numerical checks, they help
+detect and address inaccurate integration in difficult cases.</li>
+<li><strong>Faster fitting in general.</strong> The numerical engine has
+been optimized for better performance.</li>
 </ul>
-<p>The package allows two distinct sources of selection bias:</p>
-<ul>
-<li><p>Selection on individual effects (i.e., correlation between random
-effects across equations)</p></li>
-<li><p>Selection on idiosyncratic errors (i.e., contemporaneous
-correlation of error terms)</p></li>
-</ul>
-<p>These two types of selection can be activiated separately or jointly,
-providing flexibility for empirical applications.</p>
-<p>The likelihood functions for these models are detailed in <a href="https://www.ssrn.com/abstract=5475626">Bailey and Peng (2025)</a>
-and <a href="https://doi.org/10.1287/mnsc.2019.01897">Peng and Van den
-Bulte (2024)</a>. Because they lack closed-form solutions, likelihoods
-are approximated numerically via Gaussian–Hermite quadrature. Two types
-of standard errors are available: (1) Hessian-based standard errors and
-(2) BHHH (Berndt–Hall–Hall–Hausman) standard errors.</p>
-<p>Table 1 lists the supported models. Panel count models are supported
-through a companion package <a href="https://CRAN.R-project.org/package=PanelCount">PanelCount</a>.</p>
+<p>The <a href="migration.html">migration vignette</a> gives the main
+changes needed to update existing code.</p>
+</div>
+</div>
+<div id="models" class="section level2">
+<h2>2. Supported Panel Selection Models</h2>
+<p>The panel selection models share a probit selection equation and
+differ in their outcome specifications. We begin with the notation and
+assumptions used throughout this section.</p>
+<p>For individual <span class="math inline">\(i\)</span> on occasion
+<span class="math inline">\(t\)</span>, let <span class="math inline">\(d_{it}\)</span> indicate participation and let
+<span class="math inline">\(y^*_{it}\)</span> denote the potential
+outcome, observed only when <span class="math inline">\(d_{it}=1\)</span>. The row vectors <span class="math inline">\(\mathbf{w}_{it}\)</span> and <span class="math inline">\(\mathbf{x}_{it}\)</span> contain the selection and
+outcome covariates, with coefficient vectors <span class="math inline">\(\boldsymbol{\alpha}\)</span> and <span class="math inline">\(\boldsymbol{\beta}\)</span>, respectively.
+Persistent individual effects are denoted by <span class="math inline">\(u_i\)</span> and <span class="math inline">\(v_i\)</span>, while <span class="math inline">\(\varepsilon_{it}\)</span> and <span class="math inline">\(\epsilon_{it}\)</span> denote occasion-specific
+shocks.</p>
+<p>Individuals are assumed to be independent, and individual effects are
+independent of the covariates. Occasion-specific shocks are independent
+across occasions and of the individual effects, while selection and
+outcome shocks on the same occasion may be correlated. Further model
+details appear in Bailey and Peng (2025) and Peng and Van den Bulte
+(2024).</p>
+<div id="probit-relinear-re" class="section level3">
+<h3>2.1. Continuous Outcome (Probit RE–Linear RE)</h3>
+<p>The selection and outcome equations are</p>
+<p><span class="math display">\[
+d_{it}=1\bigl(\mathbf{w}_{it}\boldsymbol{\alpha}+\delta
+u_i+\varepsilon_{it}&gt;0\bigr),
+\]</span></p>
+<p><span class="math display">\[
+y^*_{it}=\mathbf{x}_{it}\boldsymbol{\beta}+\lambda
+v_i+\sigma\epsilon_{it}.
+\]</span></p>
+<p>The correlation structure is</p>
+<p><span class="math display">\[
+\begin{pmatrix}u_i\\v_i\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&amp;\rho\\\rho&amp;1\end{pmatrix}\right).
+\]</span></p>
+<p><span class="math display">\[
+\begin{pmatrix}\varepsilon_{it}\\\epsilon_{it}\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&amp;\tau\\\tau&amp;1\end{pmatrix}\right).
+\]</span></p>
+<p>Use this model for continuous outcomes with conditionally normal
+errors. The scales <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\lambda\)</span> and <span class="math inline">\(\sigma\)</span> are the SDs of selection effects,
+outcome effects and outcome errors. The correlations <span class="math inline">\(\rho\)</span> and <span class="math inline">\(\tau\)</span> capture persistent and same-occasion
+dependence. The selection shock has variance one.</p>
+</div>
+<div id="probit-reprobit-re" class="section level3">
+<h3>2.2. Binary Outcome (Probit RE–Probit RE)</h3>
+<p>For a binary potential outcome,</p>
+<p><span class="math display">\[
+d_{it}=1\bigl(\mathbf{w}_{it}\boldsymbol{\alpha}+\delta
+u_i+\varepsilon_{it}&gt;0\bigr),
+\]</span></p>
+<p><span class="math display">\[
+y^*_{it}=1\bigl(\mathbf{x}_{it}\boldsymbol{\beta}+\lambda
+v_i+\epsilon_{it}&gt;0\bigr),
+\]</span></p>
+<p>with</p>
+<p><span class="math display">\[
+\begin{pmatrix}u_i\\v_i\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&amp;\rho\\\rho&amp;1\end{pmatrix}\right).
+\]</span></p>
+<p><span class="math display">\[
+\begin{pmatrix}\varepsilon_{it}\\\epsilon_{it}\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&amp;\tau\\\tau&amp;1\end{pmatrix}\right).
+\]</span></p>
+<p>Use this model for binary outcomes. Both occasion-shock variances are
+normalized to one.</p>
+</div>
+<div id="probit-repoisson-re" class="section level3">
+<h3>2.3. Poisson Count Outcome (Probit RE–Poisson RE)</h3>
+<p>For count outcomes with selection only through individual
+effects,</p>
+<p><span class="math display">\[
+d_{it}=1\bigl(\mathbf{w}_{it}\boldsymbol{\alpha}+\delta
+u_i+\varepsilon_{it}&gt;0\bigr),
+\]</span></p>
+<p><span class="math display">\[
+y^*_{it}\mid\mathbf{x}_{it},v_i
+\sim\operatorname{Poisson}\!\left\{
+\exp(\mathbf{x}_{it}\boldsymbol{\beta}+\lambda v_i)\right\},
+\]</span></p>
+<p>where</p>
+<p><span class="math display">\[
+\begin{pmatrix}u_i\\v_i\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&amp;\rho\\\rho&amp;1\end{pmatrix}\right).
+\]</span></p>
+<p><span class="math display">\[
+\varepsilon_{it}\sim\mathcal{N}(0,1).
+\]</span></p>
+<p>The outcome random effect allows for overdispersion arising from
+unobserved individual heterogeneity. Conditional on the individual
+random effects, selection and the Poisson outcome are independent, so
+the model has no separate occasion-specific correlation parameter <span class="math inline">\(\tau\)</span>.</p>
+</div>
+<div id="probit-repoisson-lognormal-re" class="section level3">
+<h3>2.4. Poisson-Lognormal Count Outcome (Probit RE–PLN RE)</h3>
+<p>The Poisson-lognormal model extends the Poisson specification by
+adding an observation-level random effect to the log rate. This effect
+can be correlated with the selection shock <span class="math inline">\(\varepsilon_{it}\)</span>, allowing for
+same-occasion selection dependence. The equations are:</p>
+<p><span class="math display">\[
+d_{it}=1\bigl(\mathbf{w}_{it}\boldsymbol{\alpha}+\delta
+u_i+\varepsilon_{it}&gt;0\bigr),
+\]</span></p>
+<p><span class="math display">\[
+y^*_{it}\mid\mathbf{x}_{it},v_i,\epsilon_{it}
+\sim\operatorname{Poisson}\!\left\{
+\exp(\mathbf{x}_{it}\boldsymbol{\beta}+\lambda
+v_i+\gamma\epsilon_{it})\right\},
+\]</span></p>
+<p>with</p>
+<p><span class="math display">\[
+\begin{pmatrix}u_i\\v_i\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&amp;\rho\\\rho&amp;1\end{pmatrix}\right).
+\]</span></p>
+<p><span class="math display">\[
+\begin{pmatrix}\varepsilon_{it}\\\epsilon_{it}\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&amp;\tau\\\tau&amp;1\end{pmatrix}\right).
+\]</span></p>
+<p>Here <span class="math inline">\(\gamma\)</span> measures the
+standard deviation of the additional random effect at the observation
+level. PLN accommodates overdispersion beyond that captured by
+individual effects and allows selection and outcome shocks to be
+correlated within occasions.</p>
+</div>
+</div>
+<div id="fit" class="section level2">
+<h2>3. Simulated Example: Estimation and Numerical Checks</h2>
+<div id="simulate-panel" class="section level3">
+<h3>3.1. Simulate a panel with known parameters</h3>
+<p>The example follows the Linear specification. Both equations contain
+the same two covariates, with coefficients one, and all three SDs equal
+one. The correlations are <span class="math inline">\(\rho=-0.5\)</span>
+and <span class="math inline">\(\tau=0.5\)</span>:</p>
+<p><span class="math display">\[
+d_{it}=1\bigl(x_{it}+w_{it}+u_i+\varepsilon_{it}&gt;0\bigr),
+\]</span></p>
+<p><span class="math display">\[
+y^*_{it}=x_{it}+w_{it}+v_i+\epsilon_{it}.
+\]</span></p>
+<p>We simulate 500 people over five occasions. Both covariates are
+independent standard normal variables, independent of the latent
+disturbances. The code retains unselected rows and records their
+outcomes as <code>NA</code>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>N <span class="ot">=</span> <span class="dv">500</span><span class="dt">L</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>period <span class="ot">=</span> <span class="dv">5</span><span class="dt">L</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>n <span class="ot">=</span> N<span class="sc">*</span>period</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>id <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="at">each =</span> period)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>u <span class="ot">=</span> <span class="fu">rnorm</span>(N)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>v <span class="ot">=</span> <span class="sc">-</span><span class="fl">0.5</span><span class="sc">*</span>u <span class="sc">+</span> <span class="fu">sqrt</span>(<span class="fl">0.75</span>)<span class="sc">*</span><span class="fu">rnorm</span>(N)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>eps <span class="ot">=</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>e <span class="ot">=</span> <span class="fl">0.5</span><span class="sc">*</span>eps <span class="sc">+</span> <span class="fu">sqrt</span>(<span class="fl">0.75</span>)<span class="sc">*</span><span class="fu">rnorm</span>(n)</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>w <span class="ot">=</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>x <span class="ot">=</span> <span class="fu">rnorm</span>(n)</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>d <span class="ot">=</span> <span class="fu">as.integer</span>(x <span class="sc">+</span> w <span class="sc">+</span> u[id] <span class="sc">+</span> eps <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>y <span class="ot">=</span> x <span class="sc">+</span> w <span class="sc">+</span> v[id] <span class="sc">+</span> e</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>y[d <span class="sc">==</span> <span class="dv">0</span>] <span class="ot">=</span> <span class="cn">NA</span></span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>dat <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">id =</span> id, <span class="at">time =</span> <span class="fu">rep</span>(<span class="fu">seq_len</span>(period), N), <span class="at">x =</span> x, <span class="at">w =</span> w,</span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>                 <span class="at">d =</span> d, <span class="at">y =</span> y)</span></code></pre></div>
+</div>
+<div id="interpret" class="section level3">
+<h3>3.2. Fit the model and compare estimates</h3>
+<p>Fit the equations jointly using 10-node GH integration.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>fit <span class="ot">=</span> <span class="fu">panel_select</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="at">outcome =</span> y <span class="sc">~</span> x <span class="sc">+</span> w,</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">selection =</span> d <span class="sc">~</span> x <span class="sc">+</span> w,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">data =</span> dat,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">id =</span> <span class="st">&quot;id&quot;</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="at">family =</span> <span class="st">&quot;linear&quot;</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="at">control =</span> <span class="fu">panel_control</span>(<span class="at">quadrature =</span> <span class="st">&quot;gh&quot;</span>, <span class="at">nodes =</span> <span class="dv">10</span><span class="dt">L</span>))</span></code></pre></div>
+<p>Table 2 reports precomputed estimates from GH10, AGH10 and GL10
+alongside the known parameters. The AGH and GL fits are not rerun when
+this vignette is built. For AGH or GL, keep <code>nodes = 10L</code> and
+change <code>quadrature</code> to <code>&quot;agh&quot;</code> or
+<code>&quot;gl&quot;</code>, respectively. Standard errors use the default OPG
+covariance.</p>
+<!-- METHOD_COMPARISON_BEGIN -->
+<div class="table-scroll method-comparison" tabindex="0" role="region" aria-label="Parameter recovery and fitting times">
 <table>
-<caption><strong>Table 1. Panel Sample Selection
-Models</strong></caption>
+<caption>Table 2. Parameter recovery and fitting time by integration
+method</caption>
 <colgroup>
-<col width="26%" />
-<col width="16%" />
-<col width="17%" />
-<col width="23%" />
-<col width="16%" />
+<col width="20%" />
+<col width="20%" />
+<col width="20%" />
+<col width="20%" />
+<col width="20%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th align="left">Model</th>
-<th align="left">First Stage</th>
-<th align="left">Second Stage</th>
-<th align="left">Outcome Variable</th>
-<th align="left">Package</th>
+<th align="left">Parameter</th>
+<th align="right">True value</th>
+<th align="right">GH10</th>
+<th align="right">AGH10</th>
+<th align="right">GL10</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">probitRE_linearRE</td>
-<td align="left">probitRE</td>
-<td align="left">linearRE</td>
-<td align="left">linear</td>
-<td align="left">PanelSelect</td>
+<td align="left">Selection intercept</td>
+<td align="right">0</td>
+<td align="right">-0.025<br>(0.059)</td>
+<td align="right">-0.025<br>(0.059)</td>
+<td align="right">-0.025<br>(0.059)</td>
 </tr>
 <tr class="even">
-<td align="left">probitRE_probitRE</td>
-<td align="left">probitRE</td>
-<td align="left">ProbitRE</td>
-<td align="left">binary</td>
-<td align="left">PanelSelect</td>
+<td align="left">Selection: <span class="math inline">\(x\)</span></td>
+<td align="right">1</td>
+<td align="right">1.047<br>(0.058)</td>
+<td align="right">1.047<br>(0.058)</td>
+<td align="right">1.047<br>(0.058)</td>
 </tr>
 <tr class="odd">
-<td align="left">probitRE_PoissonRE</td>
-<td align="left">probitRE</td>
-<td align="left">PoissonRE</td>
-<td align="left">count</td>
-<td align="left">PanelCount</td>
+<td align="left">Selection: <span class="math inline">\(w\)</span></td>
+<td align="right">1</td>
+<td align="right">0.963<br>(0.053)</td>
+<td align="right">0.963<br>(0.053)</td>
+<td align="right">0.963<br>(0.053)</td>
 </tr>
 <tr class="even">
-<td align="left">probitRE_PLNRE</td>
-<td align="left">probitRE</td>
-<td align="left">PLN_RE</td>
-<td align="left">count</td>
-<td align="left">PanelCount</td>
+<td align="left">Outcome intercept</td>
+<td align="right">0</td>
+<td align="right">0.044<br>(0.140)</td>
+<td align="right">0.044<br>(0.140)</td>
+<td align="right">0.044<br>(0.140)</td>
+</tr>
+<tr class="odd">
+<td align="left">Outcome: <span class="math inline">\(x\)</span></td>
+<td align="right">1</td>
+<td align="right">1.055<br>(0.068)</td>
+<td align="right">1.055<br>(0.068)</td>
+<td align="right">1.055<br>(0.068)</td>
+</tr>
+<tr class="even">
+<td align="left">Outcome: <span class="math inline">\(w\)</span></td>
+<td align="right">1</td>
+<td align="right">0.989<br>(0.060)</td>
+<td align="right">0.989<br>(0.060)</td>
+<td align="right">0.989<br>(0.060)</td>
+</tr>
+<tr class="odd">
+<td align="left">Selection RE SD (<span class="math inline">\(\delta\)</span>)</td>
+<td align="right">1</td>
+<td align="right">1.037<br>(0.070)</td>
+<td align="right">1.037<br>(0.070)</td>
+<td align="right">1.037<br>(0.070)</td>
+</tr>
+<tr class="even">
+<td align="left">Outcome RE SD (<span class="math inline">\(\lambda\)</span>)</td>
+<td align="right">1</td>
+<td align="right">1.031<br>(0.054)</td>
+<td align="right">1.031<br>(0.054)</td>
+<td align="right">1.031<br>(0.054)</td>
+</tr>
+<tr class="odd">
+<td align="left">Outcome error SD (<span class="math inline">\(\sigma\)</span>)</td>
+<td align="right">1</td>
+<td align="right">0.962<br>(0.037)</td>
+<td align="right">0.962<br>(0.037)</td>
+<td align="right">0.962<br>(0.037)</td>
+</tr>
+<tr class="even">
+<td align="left">Individual-effect correlation (<span class="math inline">\(\rho\)</span>)</td>
+<td align="right">-0.5</td>
+<td align="right">-0.435<br>(0.087)</td>
+<td align="right">-0.435<br>(0.087)</td>
+<td align="right">-0.435<br>(0.087)</td>
+</tr>
+<tr class="odd">
+<td align="left">Error correlation (<span class="math inline">\(\tau\)</span>)</td>
+<td align="right">0.5</td>
+<td align="right">0.523<br>(0.152)</td>
+<td align="right">0.523<br>(0.152)</td>
+<td align="right">0.523<br>(0.152)</td>
+</tr>
+<tr class="even">
+<td align="left">Fitting time (seconds)</td>
+<td align="right">—</td>
+<td align="right">1.02</td>
+<td align="right">1.39</td>
+<td align="right">646.43</td>
 </tr>
 </tbody>
 </table>
 </div>
-<div id="models" class="section level2">
-<h2>2. Models</h2>
-<p>Let <span class="math inline">\(\mathbf{w}_{it}\)</span> and <span class="math inline">\(\mathbf{x}_{it}\)</span> represent the
-<em>row</em> vectors of covariates in the selection and outcome
-equations, respectively, with <span class="math inline">\(\boldsymbol{\alpha}\)</span> and <span class="math inline">\(\boldsymbol{\beta}\)</span> denoting the
-corresponding <em>column</em> vectors of parameters. Define <span class="math inline">\(d_{it}\)</span> as a binary participation or
-response indicator, and <span class="math inline">\(y_{it}\)</span> as
-the outcome variable, which is observed only when <span class="math inline">\(d_{it} = 1\)</span>. Individuals are indexed by
-<span class="math inline">\(i = 1, \ldots, N\)</span>, and time periods
-by <span class="math inline">\(t = 1, \ldots, T\)</span>. The models
-supported by the package are summarized below, where “RE” denotes the
-inclusion of individual random effects.</p>
-<div id="probitre_linearre" class="section level3">
-<h3>2.1. probitRE_linearRE</h3>
-<p>First stage (ProbitRE): <span class="math display">\[d_{it}   = 1(
-\mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it}
-&gt; 0 )\]</span></p>
-<p>Second stage (LinearRE):</p>
-<p><span class="math display">\[y_{it}^* = \mathbf{x}_{it}
-\boldsymbol{\beta}  + \lambda v_i + \sigma\epsilon_{it}\]</span></p>
-<p>Correlation structure:</p>
-<p><span class="math display">\[
-\begin{pmatrix}
-u_i \\
-v_i
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix}
-\begin{pmatrix}
-1 &amp; \rho \\
-\rho &amp; 1
-\end{pmatrix}
-\right),
-\quad
-\begin{pmatrix}
-\varepsilon_{it} \\
-\epsilon_{it}
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix},
-\begin{pmatrix}
-1 &amp; \tau \\
-\tau &amp; 1
-\end{pmatrix}
-\right).
-\]</span></p>
-<p>Here, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\lambda\)</span>, and <span class="math inline">\(\sigma\)</span> are positive parameters capturing
-the standard deviation of random effects and the second-stage error. The
-variance of the first-stage error is normalized to one to ensure unique
-identification of model parameters, consistent with the convention in
-Probit models.</p>
+<!-- METHOD_COMPARISON_END -->
+<!-- RECOVERY_INTERPRETATION_BEGIN -->
+<p>The three integration methods produce the same parameter estimates
+and standard errors to the reported precision. The estimated slopes and
+standard deviations are close to their true values, while the
+correlation estimates recover the opposing selection channels: negative
+dependence between individual effects and positive dependence between
+occasion-specific shocks. <!-- RECOVERY_INTERPRETATION_END --></p>
 </div>
-<div id="probitre_probitre" class="section level3">
-<h3>2.2. probitRE_probitRE</h3>
-<p>First stage (ProbitRE): <span class="math display">\[d_{it}   = 1(
-\mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it}
-&gt; 0 )\]</span></p>
-<p>Second stage (LinearRE):</p>
-<p><span class="math display">\[y_{it}^* = 1( \mathbf{x}_{it}
-\boldsymbol{\beta}  + \lambda v_i + \epsilon_{it} &gt; 0 )\]</span></p>
-<p>Correlation structure:</p>
-<p><span class="math display">\[
-\begin{pmatrix}
-u_i \\
-v_i
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix}
-\begin{pmatrix}
-1 &amp; \rho \\
-\rho &amp; 1
-\end{pmatrix}
-\right),
-\quad
-\begin{pmatrix}
-\varepsilon_{it} \\
-\epsilon_{it}
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix},
-\begin{pmatrix}
-1 &amp; \tau \\
-\tau &amp; 1
-\end{pmatrix}
-\right).
-\]</span></p>
-<p>Since both stages are Probit models, the variances of error terms in
-both stages are fixed to one to ensure model identification.</p>
-</div>
-<div id="probitre_poissonre-imported-from-panelcount" class="section level3">
-<h3>2.3. probitRE_PoissonRE (imported from <a href="https://CRAN.R-project.org/package=PanelCount">PanelCount</a>)</h3>
-<p>First stage (ProbitRE): <span class="math display">\[d_{it}   = 1(
-\mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it}
-&gt; 0 )\]</span></p>
-<p>Second stage (PoissonRE): <span class="math display">\[E[y_{it}|x_{it},v_i] = exp(\mathbf{x}_{it}
-\boldsymbol{\beta} + \sigma v_i)\]</span></p>
-<p>Correlation structure:</p>
-<p><span class="math display">\[
-\begin{pmatrix}
-u_i \\
-v_i
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix}
-\begin{pmatrix}
-1 &amp; \rho \\
-\rho &amp; 1
-\end{pmatrix}
-\right).
-\]</span> In the second stage, the random effect <span class="math inline">\(v_i\)</span> accounts for unobserved heterogeneity
-and potential overdispersion in the count outcome. Because the Poisson
-distribution intrinsically models conditional variance, no additional
-idiosyncratic error term is introduced in this specification.</p>
-</div>
-<div id="probitre_plnre-imported-from-panelcount" class="section level3">
-<h3>2.4. probitRE_PLNRE (imported from <a href="https://CRAN.R-project.org/package=PanelCount">PanelCount</a>)</h3>
-<p>First stage (ProbitRE): <span class="math display">\[d_{it}   = 1(
-\mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it}
-&gt; 0 )\]</span></p>
-<p>Second stage (PLN_RE): <span class="math display">\[E[y_{it}|x_{it},v_i,\epsilon_{it}] =
-exp(\mathbf{x}_{it} \boldsymbol{\beta}  + \sigma v_i +
-\gamma\epsilon_{it})\]</span></p>
-<p>Correlation structure:</p>
-<p><span class="math display">\[
-\begin{pmatrix}
-u_i \\
-v_i
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix}
-\begin{pmatrix}
-1 &amp; \rho \\
-\rho &amp; 1
-\end{pmatrix}
-\right),
-\quad
-\begin{pmatrix}
-\varepsilon_{it} \\
-\epsilon_{it}
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix},
-\begin{pmatrix}
-1 &amp; \tau \\
-\tau &amp; 1
-\end{pmatrix}
-\right).
-\]</span> This model introduces an additional random effect at the
-individual–time level, thereby allowing selection to occur at both the
-individual and individual–time levels. However, <span class="math inline">\(\epsilon_{it}\)</span> should be interpreted as a
-random effect rather than as an idiosyncratic error term.</p>
+<div id="integration-choices" class="section level3">
+<h3>3.3. Check and refine the fit</h3>
+<p><span id="choose-starting-values"></span></p>
+<p><strong>Step 1. Check convergence and stationarity.</strong> The
+optimizer should report convergence, and <code>Q_OPG</code> should be
+close to zero. The package warns when <code>Q_OPG &gt; 0.1</code> by
+default.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">check_stationarity</span>(fit)[<span class="fu">c</span>(<span class="st">&quot;optimizer_converged&quot;</span>, <span class="st">&quot;Q_OPG&quot;</span>)]</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="co">#&gt; $optimizer_converged</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt; $Q_OPG</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt; [1] 5.087207e-07</span></span></code></pre></div>
+<p>A small <code>Q_OPG</code> indicates that the fitted numerical
+objective is close to stationary. Integration accuracy requires a
+separate check.</p>
+<p><strong>Step 2. Compare calculations with more nodes.</strong>
+Re-evaluate the 10-node fit using 20 nodes while holding the parameter
+estimates fixed:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">check_quadrature</span>(fit, <span class="at">nodes =</span> <span class="dv">20</span><span class="dt">L</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt; Quadrature check (higher_order) of: Fixed Gauss-Hermite (gh), 10 x 10 nodes (selection x outcome)</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt;           rule nodes loglik_change max_panel_change max_score_change</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt;  person_effect    20       0.00131          0.00756           0.0329</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt;  max_panel_score_change within_tolerance</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt;                    0.06            FALSE</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; Tolerances: loglik 1e-05, score 1e-04; optimizer converged; covariance valid</span></span></code></pre></div>
+<p>Although the differences between the 10-node and 20-node GH
+calculations exceed the default comparison tolerances, refitting with 20
+nodes changes the parameter estimates only slightly. To refine the fit,
+refit with 20 nodes and repeat the check using 30 nodes. If notable
+sensitivity persists, consider AGH or GL. Because GL applies the
+specified number of nodes within each integration segment, GL10
+generally requires substantially more computation than GH10 or AGH10.
+GL10 or GL12 may be sufficient for many applications.</p>
+<p><strong>Step 3. Refit with more nodes if needed.</strong> Use
+<code>update()</code> to fit at the higher order:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>fit_more <span class="ot">=</span> <span class="fu">update</span>(fit, <span class="at">control =</span> <span class="fu">modifyList</span>(fit<span class="sc">$</span>control, <span class="fu">list</span>(<span class="at">nodes =</span> <span class="dv">20</span><span class="dt">L</span>)))</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">coef</span>(fit_more) <span class="sc">-</span> <span class="fu">coef</span>(fit)</span></code></pre></div>
+<p><code>update()</code> uses the fitted coefficients as starting values
+and preserves the other controls. Compare the estimates, then repeat the
+checks on <code>fit_more</code> with a higher comparison order.</p>
 </div>
 </div>
-<div id="examples" class="section level2">
-<h2>3. Examples</h2>
-<p>After loading the <a href="https://CRAN.R-project.org/package=PanelSelect">PanelSelect</a>
-package, type “example(model_name)” to see sample code for each model.
-The code below runs the <em>probitRE_linearRE</em> model on a simulated
-dataset with the following data generating process (DGP):</p>
-<p><span class="math display">\[d_{it}   = 1( x_{it} + u_i  +
-\varepsilon_{it} &gt; 0 )\]</span></p>
-<p><span class="math display">\[y_{it}^* = x_{it} + v_i
-+  \epsilon_{it}\]</span></p>
-<p><span class="math display">\[
-\begin{pmatrix}
-u_i \\
-v_i
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix}
-\begin{pmatrix}
-1 &amp; -0.5 \\
--0.5 &amp; 1
-\end{pmatrix}
-\right),
-\quad
-\begin{pmatrix}
-\varepsilon_{it} \\
-\epsilon_{it}
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix},
-\begin{pmatrix}
-1 &amp; 0.5 \\
-0.5 &amp; 1
-\end{pmatrix}
-\right).
-\]</span></p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(PanelSelect)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(MASS)</span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>N <span class="ot">=</span> <span class="dv">500</span></span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>period <span class="ot">=</span> <span class="dv">5</span></span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>obs <span class="ot">=</span> N<span class="sc">*</span>period</span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>rho <span class="ot">=</span> <span class="sc">-</span><span class="fl">0.5</span></span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>tau <span class="ot">=</span> <span class="fl">0.5</span></span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">100</span>)</span>
-<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a></span>
-<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>re <span class="ot">=</span> <span class="fu">mvrnorm</span>(N, <span class="at">mu=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">0</span>), <span class="at">Sigma=</span><span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>,rho,rho,<span class="dv">1</span>), <span class="at">nrow=</span><span class="dv">2</span>))</span>
-<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>u <span class="ot">=</span> <span class="fu">rep</span>(re[,<span class="dv">1</span>], <span class="at">each=</span>period)</span>
-<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>v <span class="ot">=</span> <span class="fu">rep</span>(re[,<span class="dv">2</span>], <span class="at">each=</span>period)</span>
-<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>e <span class="ot">=</span> <span class="fu">mvrnorm</span>(obs, <span class="at">mu=</span><span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">0</span>), <span class="at">Sigma=</span><span class="fu">matrix</span>(<span class="fu">c</span>(<span class="dv">1</span>,tau,tau,<span class="dv">1</span>), <span class="at">nrow=</span><span class="dv">2</span>))</span>
-<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>e1 <span class="ot">=</span> e[,<span class="dv">1</span>]</span>
-<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>e2 <span class="ot">=</span> e[,<span class="dv">2</span>]</span>
-<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a></span>
-<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>t <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>period, N)</span>
-<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a>id <span class="ot">=</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>N, <span class="at">each=</span>period)</span>
-<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>w <span class="ot">=</span> <span class="fu">rnorm</span>(obs)</span>
-<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a>z <span class="ot">=</span> <span class="fu">rnorm</span>(obs)</span>
-<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a>x <span class="ot">=</span> <span class="fu">rnorm</span>(obs)</span>
-<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a>d <span class="ot">=</span> <span class="fu">as.numeric</span>(x <span class="sc">+</span> w <span class="sc">+</span> u <span class="sc">+</span> e1 <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
-<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a>y <span class="ot">=</span> x <span class="sc">+</span> w <span class="sc">+</span> v <span class="sc">+</span> e2</span>
-<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a>y[d<span class="sc">==</span><span class="dv">0</span>] <span class="ot">=</span> <span class="cn">NA</span></span>
-<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a>dt <span class="ot">=</span> <span class="fu">data.frame</span>(id, t, y, x, w, z, d)</span>
-<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a></span>
-<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a><span class="co"># As N increases, the parameter estimates will be more accurate</span></span>
-<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a>m <span class="ot">=</span> <span class="fu">probitRE_linearRE</span>(d<span class="sc">~</span>x<span class="sc">+</span>w, y<span class="sc">~</span>x<span class="sc">+</span>w, <span class="st">&#39;id&#39;</span>, dt, <span class="at">H=</span><span class="dv">10</span>, <span class="at">verbose=</span><span class="sc">-</span><span class="dv">1</span>)</span>
-<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a><span class="fu">print</span>(m<span class="sc">$</span>estimates, <span class="at">digits=</span><span class="dv">4</span>)</span>
-<span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a><span class="co">#&gt;                    estimate      se       z         p      lci      uci</span></span>
-<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a><span class="co">#&gt; probit.(Intercept) -0.01675 0.05586 -0.2998 7.643e-01 -0.12623  0.09274</span></span>
-<span id="cb1-32"><a href="#cb1-32" tabindex="-1"></a><span class="co">#&gt; probit.x            0.96137 0.05128 18.7461 0.000e+00  0.86086  1.06188</span></span>
-<span id="cb1-33"><a href="#cb1-33" tabindex="-1"></a><span class="co">#&gt; probit.w            1.04892 0.05324 19.7033 0.000e+00  0.94458  1.15326</span></span>
-<span id="cb1-34"><a href="#cb1-34" tabindex="-1"></a><span class="co">#&gt; linear.(Intercept)  0.03536 0.15517  0.2279 8.197e-01 -0.26877  0.33950</span></span>
-<span id="cb1-35"><a href="#cb1-35" tabindex="-1"></a><span class="co">#&gt; linear.x            0.94444 0.06366 14.8362 0.000e+00  0.81967  1.06921</span></span>
-<span id="cb1-36"><a href="#cb1-36" tabindex="-1"></a><span class="co">#&gt; linear.w            0.92165 0.06963 13.2359 0.000e+00  0.78518  1.05813</span></span>
-<span id="cb1-37"><a href="#cb1-37" tabindex="-1"></a><span class="co">#&gt; delta               0.97825 0.07005 13.9653 0.000e+00  0.85015  1.12564</span></span>
-<span id="cb1-38"><a href="#cb1-38" tabindex="-1"></a><span class="co">#&gt; lambda              1.01392 0.05469 18.5410 0.000e+00  0.91221  1.12697</span></span>
-<span id="cb1-39"><a href="#cb1-39" tabindex="-1"></a><span class="co">#&gt; sigma               1.02086 0.03570 28.5923 0.000e+00  0.95322  1.09329</span></span>
-<span id="cb1-40"><a href="#cb1-40" tabindex="-1"></a><span class="co">#&gt; rho                -0.46251 0.07913 -5.8452 5.060e-09 -0.60296 -0.29425</span></span>
-<span id="cb1-41"><a href="#cb1-41" tabindex="-1"></a><span class="co">#&gt; tau                 0.44739 0.15957  2.8038 5.051e-03  0.09018  0.70261</span></span></code></pre></div>
-<p>The resulting estimates closely match the true parameter values,
-confirming the model’s effectiveness in recovering the underlying
-parameters.</p>
-</div>
-<div id="notes" class="section level2">
-<h2>4. Notes</h2>
+<div id="check" class="section level2">
+<h2>4. Practical Modeling Considerations</h2>
 <p>This section highlights several practical considerations while using
 this package.</p>
 <ul>
-<li><p>As shown in <a href="https://www.ssrn.com/abstract=5475626">Bailey and Peng (2025)</a>,
-panel selection models typically achieve stronger identification than
-their cross-sectional counterparts.</p></li>
+<li><p>As shown in <a href="https://doi.org/10.2139/ssrn.5475626">Bailey
+and Peng (2025)</a>, panel selection models typically achieve stronger
+identification than their cross-sectional counterparts.</p></li>
 <li><p>The panel need not be balanced. Also, individuals are allowed to
 make different participation decisions at different time
 periods.</p></li>
 <li><p>The covariates used in the first-stage and second-stage equations
 may differ, although excluding a variable from one stage typically
-requires theoretical justification. When in doubt, it is advisable to
-use the same set of covariates in both stages.</p></li>
+requires theoretical justification.</p></li>
 <li><p>The model allows the two correlation parameters <span class="math inline">\(\rho\)</span> and <span class="math inline">\(\tau\)</span> to be turned off separately or
-jointly.</p></li>
-<li><p>Inputs and output formats for models imported from the <a href="https://CRAN.R-project.org/package=PanelCount">PanelCount</a>
-package are somewhat different.</p></li>
+jointly. In <code>panel_select()</code>, use
+<code>fixed = c(cor_re = 0)</code> to set <span class="math inline">\(\rho=0\)</span>,
+<code>fixed = c(cor_error = 0)</code> to set <span class="math inline">\(\tau=0\)</span>, or
+<code>fixed = c(cor_re = 0, cor_error = 0)</code> to set both to zero.
+Fixing one correlation at zero can substantially speed up estimation,
+especially when <span class="math inline">\(\tau=0\)</span>.</p></li>
 <li><p>When the outcome variable is observed regardless of
 participation, the <a href="https://CRAN.R-project.org/package=endogeneity">endogeneity</a>
 package may be more appropriate, although it currently focuses on
 cross-sectional settings.</p></li>
 </ul>
+<p>For further details, see the help pages for <a href="../html/panel_select.html">model fitting</a>, <a href="../html/panel_control.html">numerical controls</a>, and <a href="../html/predict.panelselect.html">prediction</a>.</p>
+<p><span id="predict"></span> <span id="update"></span></p>
 </div>
-<div id="citations" class="section level2">
-<h2>Citations</h2>
+<div id="references" class="section level2">
+<h2>References</h2>
 <p>Bailey, M., &amp; Peng, J. (2025). A Random Effects Model of
-Non-Ignorable Nonresponse in Panel Survey Data. Available at SSRN <a href="https://www.ssrn.com/abstract=5475626" class="uri">https://www.ssrn.com/abstract=5475626</a></p>
+Non-Ignorable Nonresponse in Panel Survey Data. Available at SSRN <a href="https://doi.org/10.2139/ssrn.5475626" class="uri">https://doi.org/10.2139/ssrn.5475626</a></p>
 <p>Peng, J., &amp; Van den Bulte, C. (2024). Participation
 vs. Effectiveness in Sponsored Tweet Campaigns: A Quality-Quantity
-Conundrum. <em>Management Science</em>, 70(11):7345-8215. Available at
+Conundrum. <em>Management Science</em>, 70(11):7961-7983. Available at
 <a href="https://doi.org/10.1287/mnsc.2019.01897" class="uri">https://doi.org/10.1287/mnsc.2019.01897</a></p>
 </div>
 

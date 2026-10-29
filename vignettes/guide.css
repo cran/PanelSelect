@@ -1,0 +1,110 @@
+/* Extend html_vignette's base theme without widening the page on small screens. */
+p code, td code, th code, li code {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+
+pre code {
+  overflow-wrap: normal;
+  white-space: pre;
+  word-break: normal;
+}
+
+table {
+  max-width: 100%;
+}
+
+caption {
+  caption-side: top;
+  padding: 0 0 0.6em;
+  text-align: center;
+  font-style: normal;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Keep wide comparison tables readable while the surrounding page reflows. */
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.table-scroll table {
+  min-width: 620px;
+}
+
+/* Reserve room for parameter names beside the three estimate/SE columns. */
+.method-comparison table {
+  width: 100%;
+  table-layout: fixed;
+}
+.method-comparison col:first-child { width: 36% !important; }
+.method-comparison col:nth-child(2) { width: 10% !important; }
+.method-comparison col:nth-child(n+3) { width: 18% !important; }
+.method-comparison th:not(:first-child),
+.method-comparison td:not(:first-child) { text-align: center !important; }
+
+.table-scroll:focus-visible {
+  outline: 2px solid #366888;
+  outline-offset: 2px;
+}
+
+/* Shared column widths and alignment across the two model-table panels. */
+.table-scroll .model-capabilities {
+  width: 100%;
+  min-width: 520px;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.model-capabilities .model-column { width: 34%; }
+.model-capabilities .family-column { width: 20%; }
+
+.model-capabilities th,
+.model-capabilities td {
+  padding: 0.6em 0.7em;
+  text-align: center;
+  vertical-align: middle;
+  border-top: 1px solid #aaa;
+  border-bottom: 1px solid #aaa;
+}
+
+.model-capabilities thead th {
+  border-top: 2px solid #888;
+  border-bottom: 2px solid #888;
+}
+.model-capabilities tbody th,
+.model-capabilities tbody td { background: #fff; }
+
+.model-capabilities th:first-child { text-align: left; }
+.model-capabilities tbody th[scope="row"] { font-weight: normal; }
+
+.model-capabilities .model-panel th {
+  padding-top: 0.7em;
+  padding-bottom: 0.7em;
+  text-align: left;
+  background: #e9eef2;
+  border-top: 1px solid #888;
+  border-bottom: 1px solid #aaa;
+}
+
+.MathJax_Display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.35em 0;
+}
+
+/* Left alignment keeps the beginning of a wide equation reachable on mobile. */
+@media (max-width: 600px) {
+  .MathJax_Display {
+    text-align: left !important;
+  }
+}

@@ -1,0 +1,183 @@
+---
+title: "Migrating from PanelSelect 1.0.1 to 2.0.0"
+output:
+  rmarkdown::html_vignette:
+    css:
+      - !expr system.file("rmarkdown", "templates", "html_vignette", "resources", "vignette.css", package = "rmarkdown")
+      - guide.css
+vignette: >
+  %\VignetteIndexEntry{Migrating from PanelSelect 1.0.1 to 2.0.0}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(PanelSelect)
+```
+
+The main change is one fitting function, `panel_select()`, with common controls
+and standard fitted-object methods. This guide maps the four panel-selection
+functions in 1.0.1 to version 2.0.0 and highlights changes that can affect results.
+
+<span id="saved-objects"></span>
+
+Refit saved 1.0.1 analyses from their original data. Their result lists are not
+current `panelselect` objects and cannot be passed directly to the new methods.
+
+## 1. Update the fitting call {#function-map}
+
+::: {.table-scroll tabindex="0" role="region" aria-label="Fitting function changes"}
+
+| Outcome | Function in 1.0.1 | Current `panel_select()` family |
+|:---|:---|:---|
+| Linear | `probitRE_linearRE()` | `"linear"` |
+| Binary | `probitRE_probitRE()` | `"probit"` |
+| Poisson | `probitRE_PoissonRE()` | `"poisson"` |
+| Poisson-lognormal | `probitRE_PLNRE()` | `"pln"` |
+
+Table: Table 1. Replace model-specific functions with one fitting interface
+
+:::
+
+The **outcome formula now comes first**, followed by selection, data, ID and
+family. Named arguments avoid mistakes when translating old positional calls.
+For example, using `dat` from the [main vignette](vignette.html#fit):
+
+<span id="worked-examples"></span>
+<span id="linear-selection"></span>
+
+```{r old-call, eval=FALSE}
+# PanelSelect 1.0.1
+old = probitRE_linearRE(d ~ x + w, y ~ x + w, id.name = "id", data = dat)
+```
+
+```{r current-call, eval=FALSE}
+# PanelSelect 2.0.0
+fit = panel_select(
+  outcome = y ~ x + w,
+  selection = d ~ x + w,
+  data = dat,
+  id = "id",
+  family = "linear")
+summary(fit)
+```
+
+<span id="models-without-selection"></span>
+
+The same interface also fits cross-sectional Linear, binary and PLN selection
+models with `id = NULL`, and standalone panel probit, Poisson and PLN models
+with `selection = NULL`. Keep unselected rows in selection models; their outcome
+may be `NA`.
+
+## 2. Translate settings and parameter names {#argument-map}
+
+::: {.table-scroll tabindex="0" role="region" aria-label="Argument and control changes"}
+
+| Setting in 1.0.1 | Current equivalent |
+|:---|:---|
+| `id.name = "id"` | `id = "id"` |
+| `rho_off = TRUE` (Linear/binary); `disable_rho = TRUE` (PLN) | `fixed = c(cor_re = 0)` |
+| `tau_off = TRUE` (Linear/binary); `disable_tau = TRUE` (PLN) | `fixed = c(cor_error = 0)` |
+| `rho.init`, `tau.init`, or supplied parameter values | Named natural-scale values in `start`, using Table 3 |
+| `H` (Linear/binary) | `control = panel_control(quadrature = "gh", nodes = H)` |
+| `method`, `reltol`, `factr`, `verbose` | Arguments of `panel_control()`; use `trace` instead of `verbose` |
+| `use.optim = FALSE` (Linear/binary default) | `control = panel_control(optimizer = "maxLik")`; the current default is `optim()` with BFGS |
+| `se_type = "BHHH"` or `"Hessian"` (count models) | `vcov = "opg"` or `vcov = "observed"` |
+| Count-model `offset_w_name`, `offset_x_name` | `offset()` terms in the selection and outcome formulas |
+
+Table: Table 2. Common argument and control changes
+
+:::
+
+<span id="count-selection-and-its-likelihood-ratio-test"></span>
+<span id="offsets-and-new-data"></span>
+
+For count models, old `H = c(h1, h2)` becomes
+`nodes = c(selection = h2, outcome = h1)`. PLN also uses
+`observation_nodes = h2`. This preserves the intended orders, not identical
+numerical results. The current defaults are fixed GH with 10 nodes per person
+effect and 20 nodes for PLN's separate observation integral.
+
+::: {.table-scroll tabindex="0" role="region" aria-label="Parameter name changes"}
+
+| Parameter | 1.0.1 Linear/binary | 1.0.1 count models | Current name |
+|:---|:---|:---|:---|
+| Selection coefficients | `probit.<column>` or `probit1.<column>` | Selection-equation column names | `selection.<column>` |
+| Outcome coefficients | `linear.<column>` or `probit2.<column>` | Outcome-equation column names | `outcome.<column>` |
+| Selection person-effect SD | `delta` | `delta` | `sd_re_selection` |
+| Outcome person-effect SD | `lambda` | `sigma` | `sd_re_outcome` |
+| Linear residual / PLN occasion SD | `sigma` (Linear) | `gamma` (PLN) | `sd_error` |
+| Person-effect correlation | `rho` | `rho` | `cor_re` |
+| Occasion-error correlation | `tau` | `tau` (PLN) | `cor_error` |
+
+Table: Table 3. Names used by coefficients, starting values and restrictions
+
+:::
+
+`start` accepts any subset of the current names; `init` supplies the rest.
+`fixed` holds named parameters at their supplied values. Supply natural-scale
+values, not optimizer coordinates. Free SDs must start positive; fixed SDs may
+be zero where allowed. Correlations must lie strictly between −1 and 1.
+
+The Linear/binary functions in 1.0.1 ignored `par`; current `start` values are
+honored. When transferring estimates, use the old `estimates` table and map its
+names explicitly. Do not copy raw `$par` or `$estimate` indiscriminately: their
+scales differed across the old functions.
+
+## 3. Read results through methods {#output-map}
+
+::: {.table-scroll tabindex="0" role="region" aria-label="Result extraction changes"}
+
+| Result in 1.0.1 | Current method |
+|:---|:---|
+| `$estimates[, "estimate"]` | `coef(fit)` |
+| `$estimates` | `summary(fit)$coefficients`; `confint(fit)` for intervals |
+| `$var`, `$var_bhhh`, `$var_hessian`, `$se` | `vcov(fit)`; SEs in `summary(fit)$coefficients[, "se"]` |
+| `$LL`, `$maximum`, `$value` | `logLik(fit)` |
+| `$AIC`, `$BIC` | `AIC(fit)`; use `BIC(fit, unit = "observations")` for the old row-count convention |
+| `$predict$respond_prob`, `$predict$prob` | `predict(fit, newdata, type = "selection_probability")` |
+| `$predict$outcome`, `$predict$outcome_prob` | `predict(fit, newdata, type = "response")` |
+| `$predict$actual_outcome` | `predict(fit, newdata, type = "joint")` |
+| `$predict$pop_mean` | `predict(fit, newdata, type = "response", aggregate = TRUE)` |
+
+Table: Table 4. Replace direct component access with fitted-object methods
+
+:::
+
+Predictions are requested after fitting; add `se.fit = TRUE` for their standard
+errors. `type = "response"` is the potential-outcome mean, while
+`type = "selected_mean"` is the mean among selected observations. Population
+predictions remain the default. `type = "joint"` gives the mean observed
+contribution, counting unselected outcomes as zero. History-conditioned predictions require explicit
+`history` data and GH/AGH at the applicable integration levels.
+
+`BIC(fit)` now counts independent panels by default. For covariance alternatives,
+request `vcov(fit, type = "observed")` or `vcov(fit, type = "opg")` explicitly.
+
+## 4. Understand changes in results {#why-numbers-can-differ}
+
+Matching formulas and integration orders does not guarantee the same estimates
+or standard errors as 1.0.1. The main reasons are:
+
+- **Starting values.** The current default uses separate random-effects models
+  for panel selection. The old Linear/binary default used pooled regressions;
+  choose `init = "pooled"` to use that approach. The old count models already
+  used random-effects auxiliaries.
+- **Standard errors.** The default is now `vcov = "opg"`, based on independent-unit
+  score outer products. The old Linear/binary functions preferred the inverse
+  Hessian; choose `vcov = "observed"` to request observed information. Invalid
+  requested covariance remains unavailable rather than being replaced silently.
+- **Corrected calculations.** Fixes to derivatives, parameter transformations and
+  rare-probability calculations can change estimates or standard errors. Formula
+  `offset()` terms ignored by the old Linear/binary functions now enter their
+  predictors with coefficient one.
+- **Numerical accuracy.** Adaptive GH and GL provide alternatives to fixed GH.
+  Use `check_stationarity()` and `check_quadrature()` to assess a new fit, and
+  compare estimates under common, checked settings. Convergence alone does not
+  establish integration accuracy or a global maximum.
+
+See the [main vignette](vignette.html#integration-choices) for a short checking
+workflow, and the [fitting](../html/panel_select.html),
+[control](../html/panel_control.html) and
+[prediction](../html/predict.panelselect.html) help for additional options.

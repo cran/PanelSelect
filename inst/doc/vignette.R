@@ -1,47 +1,41 @@
-## ----setup, include = FALSE---------------------------------------------------
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
-
-## ----Table, echo=FALSE--------------------------------------------------------
-tb = data.frame(
-    Model = c('probitRE_linearRE', 'probitRE_probitRE', 'probitRE_PoissonRE', 'probitRE_PLNRE'),
-    `First Stage` = c(rep('probitRE', 4)),
-    `Second Stage` = c('linearRE', 'ProbitRE', 'PoissonRE', 'PLN_RE'),
-    `Outcome Variable` = c('linear','binary', 'count', 'count'),
-    Package = c('PanelSelect', 'PanelSelect', 'PanelCount', 'PanelCount')
-)
-knitr::kable(tb, col.names = gsub("[.]", " ", names(tb)), caption='**Table 1. Panel Sample Selection Models**')
-
-## -----------------------------------------------------------------------------
+## ----setup, include=FALSE-----------------------------------------------------
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(PanelSelect)
-library(MASS)
-N = 500
-period = 5
-obs = N*period
-rho = -0.5
-tau = 0.5
+
+## ----data---------------------------------------------------------------------
 set.seed(100)
+N = 500L
+period = 5L
+n = N*period
+id = rep(1:N, each = period)
+u = rnorm(N)
+v = -0.5*u + sqrt(0.75)*rnorm(N)
+eps = rnorm(n)
+e = 0.5*eps + sqrt(0.75)*rnorm(n)
+w = rnorm(n)
+x = rnorm(n)
+d = as.integer(x + w + u[id] + eps > 0)
+y = x + w + v[id] + e
+y[d == 0] = NA
+dat = data.frame(id = id, time = rep(seq_len(period), N), x = x, w = w,
+                 d = d, y = y)
 
-re = mvrnorm(N, mu=c(0,0), Sigma=matrix(c(1,rho,rho,1), nrow=2))
-u = rep(re[,1], each=period)
-v = rep(re[,2], each=period)
-e = mvrnorm(obs, mu=c(0,0), Sigma=matrix(c(1,tau,tau,1), nrow=2))
-e1 = e[,1]
-e2 = e[,2]
+## ----selection-fit------------------------------------------------------------
+fit = panel_select(
+  outcome = y ~ x + w,
+  selection = d ~ x + w,
+  data = dat,
+  id = "id",
+  family = "linear",
+  control = panel_control(quadrature = "gh", nodes = 10L))
 
-t = rep(1:period, N)
-id = rep(1:N, each=period)
-w = rnorm(obs)
-z = rnorm(obs)
-x = rnorm(obs)
-d = as.numeric(x + w + u + e1 > 0)
-y = x + w + v + e2
-y[d==0] = NA
-dt = data.frame(id, t, y, x, w, z, d)
+## ----numerical-checks---------------------------------------------------------
+check_stationarity(fit)[c("optimizer_converged", "Q_OPG")]
 
-# As N increases, the parameter estimates will be more accurate
-m = probitRE_linearRE(d~x+w, y~x+w, 'id', dt, H=10, verbose=-1)
-print(m$estimates, digits=4)
+## ----quadrature-check---------------------------------------------------------
+check_quadrature(fit, nodes = 20L)
+
+## ----refine-integration, eval=FALSE-------------------------------------------
+# fit_more = update(fit, control = modifyList(fit$control, list(nodes = 20L)))
+# coef(fit_more) - coef(fit)
 

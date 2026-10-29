@@ -1,309 +1,367 @@
 ---
-title: "Sample Selection Models for Panel Data"
+title: "Sample Selection Models for Panel and Cross-Sectional Data"
 author:
 - name: Jing Peng
   affiliation: School of Business, University of Connecticut
   email: jing.peng@uconn.edu
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
-link-citations: true
+output:
+  rmarkdown::html_vignette:
+    math_method: mathjax
+    css:
+      - !expr system.file("rmarkdown", "templates", "html_vignette", "resources", "vignette.css", package = "rmarkdown")
+      - guide.css
 vignette: >
-  %\VignetteIndexEntry{Sample Selection Models for Panel Data}
+  %\VignetteIndexEntry{Sample Selection Models for Panel and Cross-Sectional Data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
-```
-
-## 1. Introduction
-
-The [PanelSelect](https://CRAN.R-project.org/package=PanelSelect) package supports a family of panel sample selection models. The models extend the classic Heckman selection framework to panel data with individual random effects, enabling more robust and flexible correction for non-random participation and attrition in panel settings.
-
-The general structure involves a two-stage setup:
-
--   The first stage is a panel Probit model describing the participation or response decision.
-
--   The second stage can be a panel linear, Probit, Poisson, or Poisson log-normal model for the outcome.
-
-The package allows two distinct sources of selection bias:
-
--   Selection on individual effects (i.e., correlation between random effects across equations)
-
--   Selection on idiosyncratic errors (i.e., contemporaneous correlation of error terms)
-
-These two types of selection can be activiated separately or jointly, providing flexibility for empirical applications.
-
-The likelihood functions for these models are detailed in [Bailey and Peng (2025)](https://www.ssrn.com/abstract=5475626) and [Peng and Van den Bulte (2024)](https://doi.org/10.1287/mnsc.2019.01897). Because they lack closed-form solutions, likelihoods are approximated numerically via Gaussian–Hermite quadrature. Two types of standard errors are available: (1) Hessian-based standard errors and (2) BHHH (Berndt–Hall–Hall–Hausman) standard errors.
-
-Table 1 lists the supported models. Panel count models are supported through a companion package [PanelCount](https://CRAN.R-project.org/package=PanelCount).
-
-```{r Table, echo=FALSE}
-tb = data.frame(
-    Model = c('probitRE_linearRE', 'probitRE_probitRE', 'probitRE_PoissonRE', 'probitRE_PLNRE'),
-    `First Stage` = c(rep('probitRE', 4)),
-    `Second Stage` = c('linearRE', 'ProbitRE', 'PoissonRE', 'PLN_RE'),
-    `Outcome Variable` = c('linear','binary', 'count', 'count'),
-    Package = c('PanelSelect', 'PanelSelect', 'PanelCount', 'PanelCount')
-)
-knitr::kable(tb, col.names = gsub("[.]", " ", names(tb)), caption='**Table 1. Panel Sample Selection Models**')
-```
-
-## 2. Models
-
-Let $\mathbf{w}_{it}$ and $\mathbf{x}_{it}$ represent the *row* vectors of covariates in the selection and outcome equations, respectively, with $\boldsymbol{\alpha}$ and $\boldsymbol{\beta}$ denoting the corresponding *column* vectors of parameters. Define $d_{it}$ as a binary participation or response indicator, and $y_{it}$ as the outcome variable, which is observed only when $d_{it} = 1$. Individuals are indexed by $i = 1, \ldots, N$, and time periods by $t = 1, \ldots, T$. The models supported by the package are summarized below, where “RE” denotes the inclusion of individual random effects.
-
-### 2.1. probitRE_linearRE
-
-First stage (ProbitRE): $$d_{it}   = 1( \mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it} > 0 )$$
-
-Second stage (LinearRE):
-
-$$y_{it}^* = \mathbf{x}_{it} \boldsymbol{\beta}  + \lambda v_i + \sigma\epsilon_{it}$$
-
-Correlation structure:
-
-$$
-\begin{pmatrix}
-u_i \\
-v_i
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix}
-\begin{pmatrix}
-1 & \rho \\
-\rho & 1
-\end{pmatrix}
-\right),
-\quad
-\begin{pmatrix}
-\varepsilon_{it} \\
-\epsilon_{it}
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix},
-\begin{pmatrix}
-1 & \tau \\
-\tau & 1
-\end{pmatrix}
-\right).
-$$
-
-Here, $\delta$, $\lambda$, and $\sigma$ are positive parameters capturing the standard deviation of random effects and the second-stage error. The variance of the first-stage error is normalized to one to ensure unique identification of model parameters, consistent with the convention in Probit models.
-
-### 2.2. probitRE_probitRE
-
-First stage (ProbitRE): $$d_{it}   = 1( \mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it} > 0 )$$
-
-Second stage (LinearRE):
-
-$$y_{it}^* = 1( \mathbf{x}_{it} \boldsymbol{\beta}  + \lambda v_i + \epsilon_{it} > 0 )$$
-
-Correlation structure:
-
-$$
-\begin{pmatrix}
-u_i \\
-v_i
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix}
-\begin{pmatrix}
-1 & \rho \\
-\rho & 1
-\end{pmatrix}
-\right),
-\quad
-\begin{pmatrix}
-\varepsilon_{it} \\
-\epsilon_{it}
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix},
-\begin{pmatrix}
-1 & \tau \\
-\tau & 1
-\end{pmatrix}
-\right).
-$$
-
-Since both stages are Probit models, the variances of error terms in both stages are fixed to one to ensure model identification.
-
-### 2.3. probitRE_PoissonRE (imported from [PanelCount](https://CRAN.R-project.org/package=PanelCount))
-
-First stage (ProbitRE): $$d_{it}   = 1( \mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it} > 0 )$$
-
-Second stage (PoissonRE): $$E[y_{it}|x_{it},v_i] = exp(\mathbf{x}_{it} \boldsymbol{\beta} + \sigma v_i)$$
-
-Correlation structure:
-
-$$
-\begin{pmatrix}
-u_i \\
-v_i
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix}
-\begin{pmatrix}
-1 & \rho \\
-\rho & 1
-\end{pmatrix}
-\right).
-$$
-In the second stage, the random effect $v_i$ accounts for unobserved heterogeneity and potential overdispersion in the count outcome. Because the Poisson distribution intrinsically models conditional variance, no additional idiosyncratic error term is introduced in this specification.
-
-### 2.4. probitRE_PLNRE (imported from [PanelCount](https://CRAN.R-project.org/package=PanelCount))
-
-First stage (ProbitRE): $$d_{it}   = 1( \mathbf{w}_{it} \boldsymbol{\alpha} + \delta u_i  + \varepsilon_{it} > 0 )$$
-
-Second stage (PLN_RE): $$E[y_{it}|x_{it},v_i,\epsilon_{it}] = exp(\mathbf{x}_{it} \boldsymbol{\beta}  + \sigma v_i + \gamma\epsilon_{it})$$
-
-Correlation structure:
-
-$$
-\begin{pmatrix}
-u_i \\
-v_i
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix}
-\begin{pmatrix}
-1 & \rho \\
-\rho & 1
-\end{pmatrix}
-\right),
-\quad
-\begin{pmatrix}
-\varepsilon_{it} \\
-\epsilon_{it}
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix},
-\begin{pmatrix}
-1 & \tau \\
-\tau & 1
-\end{pmatrix}
-\right).
-$$
-This model introduces an additional random effect at the individual–time level, thereby allowing selection to occur at both the individual and individual–time levels. However, $\epsilon_{it}$ should be interpreted as a random effect rather than as an idiosyncratic error term.
-
-## 3. Examples
-
-After loading the [PanelSelect](https://CRAN.R-project.org/package=PanelSelect) package, type "example(model_name)" to see sample code for each model. The code below runs the *probitRE_linearRE* model on a simulated dataset with the following data generating process (DGP):
-
-$$d_{it}   = 1( x_{it} + u_i  + \varepsilon_{it} > 0 )$$
-
-$$y_{it}^* = x_{it} + v_i +  \epsilon_{it}$$
-
-$$
-\begin{pmatrix}
-u_i \\
-v_i
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix}
-\begin{pmatrix}
-1 & -0.5 \\
--0.5 & 1
-\end{pmatrix}
-\right),
-\quad
-\begin{pmatrix}
-\varepsilon_{it} \\
-\epsilon_{it}
-\end{pmatrix}
-\sim \mathcal{N} \left(
-\begin{pmatrix}
-0 \\
-0
-\end{pmatrix},
-\begin{pmatrix}
-1 & 0.5 \\
-0.5 & 1
-\end{pmatrix}
-\right).
-$$
-
-```{r}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(PanelSelect)
-library(MASS)
-N = 500
-period = 5
-obs = N*period
-rho = -0.5
-tau = 0.5
-set.seed(100)
-
-re = mvrnorm(N, mu=c(0,0), Sigma=matrix(c(1,rho,rho,1), nrow=2))
-u = rep(re[,1], each=period)
-v = rep(re[,2], each=period)
-e = mvrnorm(obs, mu=c(0,0), Sigma=matrix(c(1,tau,tau,1), nrow=2))
-e1 = e[,1]
-e2 = e[,2]
-
-t = rep(1:period, N)
-id = rep(1:N, each=period)
-w = rnorm(obs)
-z = rnorm(obs)
-x = rnorm(obs)
-d = as.numeric(x + w + u + e1 > 0)
-y = x + w + v + e2
-y[d==0] = NA
-dt = data.frame(id, t, y, x, w, z, d)
-
-# As N increases, the parameter estimates will be more accurate
-m = probitRE_linearRE(d~x+w, y~x+w, 'id', dt, H=10, verbose=-1)
-print(m$estimates, digits=4)
 ```
 
-The resulting estimates closely match the true parameter values, confirming the model’s effectiveness in recovering the underlying parameters.
+## 1. Introduction {#choose}
 
-## 4. Notes
+PanelSelect provides a unified and flexible framework for sample selection models with continuous, binary, and count outcomes in panel and cross-sectional data. In particular, it supports a broad family of panel selection models, which extend the classic Heckman framework to account for persistent unobserved heterogeneity. The package supports selection at two levels: the individual level, through correlated random effects, and the observation level, through correlated occasion-specific shocks. This allows researchers to distinguish non-random selection driven by persistent individual characteristics from selection driven by temporary shocks. Alongside model estimation, PanelSelect supports prediction of population-level outcomes.
+
+Each selection model combines a probit selection equation with an equation for a continuous, binary, or count outcome, estimated jointly by maximum likelihood. For panel data, both equations include individual random effects to capture persistent unobserved heterogeneity. The corresponding likelihoods are detailed in Bailey and Peng (2025) and Peng and Van den Bulte (2024). PanelSelect evaluates the required integrals using fixed Gauss–Hermite quadrature (the default), adaptive Gauss–Hermite quadrature, or Gauss–Legendre quadrature, which can improve accuracy in difficult cases but may require substantially more computation.
+
+For data with one observation per individual, the package also supports cross-sectional linear, binary, and Poisson-lognormal selection models. The remainder of this vignette focuses on the panel models, demonstrating how to specify and fit them and assess numerical accuracy.
+
+### 1.1. Supported models {#supported-models}
+
+Table 1 summarizes the available models. Panels may be unbalanced, and
+participation may change across occasions.
+
+```{=html}
+<div class="table-scroll" tabindex="0" role="region" aria-label="Supported selection models">
+<table class="model-capabilities">
+<caption id="tab-models">Table 1. Supported sample-selection models</caption>
+<colgroup><col class="model-column"><col class="family-column"><col><col></colgroup>
+<thead>
+<tr><th scope="col">Outcome model</th><th scope="col"><code>family</code></th><th scope="col">Individual-effect<br>correlation</th><th scope="col">Error<br>correlation</th></tr>
+</thead>
+<tbody>
+<tr class="model-panel"><th colspan="4" scope="rowgroup">A. Panel selection</th></tr>
+<tr><th scope="row">Linear RE</th><td><code>"linear"</code></td><td>Yes</td><td>Yes</td></tr>
+<tr><th scope="row">Probit RE</th><td><code>"probit"</code></td><td>Yes</td><td>Yes</td></tr>
+<tr><th scope="row">Poisson RE</th><td><code>"poisson"</code></td><td>Yes</td><td>—</td></tr>
+<tr><th scope="row">Poisson-lognormal RE</th><td><code>"pln"</code></td><td>Yes</td><td>Yes</td></tr>
+</tbody>
+<tbody>
+<tr class="model-panel"><th colspan="4" scope="rowgroup">B. Cross-sectional selection</th></tr>
+<tr><th scope="row">Linear</th><td><code>"linear"</code></td><td>—</td><td>Yes</td></tr>
+<tr><th scope="row">Probit</th><td><code>"probit"</code></td><td>—</td><td>Yes</td></tr>
+<tr><th scope="row">Poisson-lognormal</th><td><code>"pln"</code></td><td>—</td><td>Yes</td></tr>
+</tbody>
+</table>
+</div>
+```
+
+**Note:** RE means random effects; — indicates an absent correlation channel.
+Standalone probit, Poisson and PLN random-effects models are also supported and
+provide default outcome-coefficient starting values for the corresponding
+panel-selection models.
+
+### 1.2. What changed since 1.0.1? {#changes-since-1-0-1}
+
+Version 2.0.0 is a full refactor of the package, developed with assistance from
+Codex and Claude Code. We recommend 2.0.0 for new analyses and for
+refitting analyses conducted with 1.0.1. The four original panel-selection
+families are retained, with improvements that matter for everyday use:
+
+- **Corrected estimation.** Corrections to likelihood and score calculations address some errors that can slightly distort parameter estimates and standard errors. 
+- **A unified, user-friendly interface.** `panel_select()` replaces separate model-specific fitting functions, with common controls and standard methods such as `summary()`, `predict()` and `update()`.
+- **Broader model support.** Cross-sectional selection models and standalone binary and count panel models complement the original panel-selection families.
+- **More control over numerical accuracy.** Adaptive Gauss–Hermite (AGH) and
+  Gauss–Legendre (GL) supplement fixed Gauss–Hermite (GH). Together with explicit
+  numerical checks, they help detect and address inaccurate integration in
+  difficult cases.
+- **Faster fitting in general.** The numerical engine has been optimized for better performance.
+
+The [migration vignette](migration.html) gives the main changes needed to update
+existing code.
+
+## 2. Supported Panel Selection Models {#models}
+
+The panel selection models share a probit selection equation and differ in their outcome specifications. We begin with the notation and assumptions used throughout this section.
+
+For individual $i$ on occasion $t$, let $d_{it}$ indicate participation and let $y^*_{it}$ denote the potential outcome, observed only when $d_{it}=1$. The row vectors $\mathbf{w}_{it}$ and $\mathbf{x}_{it}$ contain the selection and outcome covariates, with coefficient vectors $\boldsymbol{\alpha}$ and $\boldsymbol{\beta}$, respectively. Persistent individual effects are denoted by $u_i$ and $v_i$, while $\varepsilon_{it}$ and $\epsilon_{it}$ denote occasion-specific shocks.
+
+Individuals are assumed to be independent, and individual effects are independent of the covariates. Occasion-specific shocks are independent across occasions and of the individual effects, while selection and outcome shocks on the same occasion may be correlated. Further model details appear in Bailey and Peng (2025) and Peng and Van den Bulte (2024).
+
+### 2.1. Continuous Outcome (Probit RE–Linear RE) {#probit-relinear-re}
+
+The selection and outcome equations are
+
+$$
+d_{it}=1\bigl(\mathbf{w}_{it}\boldsymbol{\alpha}+\delta u_i+\varepsilon_{it}>0\bigr),
+$$
+
+$$
+y^*_{it}=\mathbf{x}_{it}\boldsymbol{\beta}+\lambda v_i+\sigma\epsilon_{it}.
+$$
+
+The correlation structure is
+
+$$
+\begin{pmatrix}u_i\\v_i\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&\rho\\\rho&1\end{pmatrix}\right).
+$$
+
+$$
+\begin{pmatrix}\varepsilon_{it}\\\epsilon_{it}\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&\tau\\\tau&1\end{pmatrix}\right).
+$$
+
+Use this model for continuous outcomes with conditionally normal errors.
+The scales $\delta$, $\lambda$ and $\sigma$ are the SDs of selection effects,
+outcome effects and outcome errors. The correlations $\rho$ and $\tau$ capture
+persistent and same-occasion dependence. The selection shock has variance one.
+
+### 2.2. Binary Outcome (Probit RE–Probit RE) {#probit-reprobit-re}
+
+For a binary potential outcome,
+
+$$
+d_{it}=1\bigl(\mathbf{w}_{it}\boldsymbol{\alpha}+\delta u_i+\varepsilon_{it}>0\bigr),
+$$
+
+$$
+y^*_{it}=1\bigl(\mathbf{x}_{it}\boldsymbol{\beta}+\lambda v_i+\epsilon_{it}>0\bigr),
+$$
+
+with
+
+$$
+\begin{pmatrix}u_i\\v_i\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&\rho\\\rho&1\end{pmatrix}\right).
+$$
+
+$$
+\begin{pmatrix}\varepsilon_{it}\\\epsilon_{it}\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&\tau\\\tau&1\end{pmatrix}\right).
+$$
+
+Use this model for binary outcomes. Both occasion-shock variances are normalized
+to one. 
+
+### 2.3. Poisson Count Outcome (Probit RE–Poisson RE) {#probit-repoisson-re}
+
+For count outcomes with selection only through individual effects,
+
+$$
+d_{it}=1\bigl(\mathbf{w}_{it}\boldsymbol{\alpha}+\delta u_i+\varepsilon_{it}>0\bigr),
+$$
+
+$$
+y^*_{it}\mid\mathbf{x}_{it},v_i
+\sim\operatorname{Poisson}\!\left\{
+\exp(\mathbf{x}_{it}\boldsymbol{\beta}+\lambda v_i)\right\},
+$$
+
+where
+
+$$
+\begin{pmatrix}u_i\\v_i\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&\rho\\\rho&1\end{pmatrix}\right).
+$$
+
+$$
+\varepsilon_{it}\sim\mathcal{N}(0,1).
+$$
+
+The outcome random effect allows for overdispersion arising from unobserved individual heterogeneity. Conditional on the individual random effects, selection and the Poisson outcome are independent, so the model has no separate occasion-specific correlation parameter $\tau$.
+
+### 2.4. Poisson-Lognormal Count Outcome (Probit RE–PLN RE) {#probit-repoisson-lognormal-re}
+
+The Poisson-lognormal model extends the Poisson specification by adding an observation-level random effect to the log rate. This effect can be correlated with the selection shock $\varepsilon_{it}$, allowing for same-occasion selection dependence. The equations are:
+
+$$
+d_{it}=1\bigl(\mathbf{w}_{it}\boldsymbol{\alpha}+\delta u_i+\varepsilon_{it}>0\bigr),
+$$
+
+$$
+y^*_{it}\mid\mathbf{x}_{it},v_i,\epsilon_{it}
+\sim\operatorname{Poisson}\!\left\{
+\exp(\mathbf{x}_{it}\boldsymbol{\beta}+\lambda v_i+\gamma\epsilon_{it})\right\},
+$$
+
+with
+
+$$
+\begin{pmatrix}u_i\\v_i\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&\rho\\\rho&1\end{pmatrix}\right).
+$$
+
+$$
+\begin{pmatrix}\varepsilon_{it}\\\epsilon_{it}\end{pmatrix}
+\sim\mathcal{N}_2\!\left(
+\begin{pmatrix}0\\0\end{pmatrix},
+\begin{pmatrix}1&\tau\\\tau&1\end{pmatrix}\right).
+$$
+
+Here $\gamma$ measures the standard deviation of the additional random effect at the observation level. PLN accommodates overdispersion beyond that captured by individual effects and allows selection and outcome shocks to be correlated within occasions.
+
+## 3. Simulated Example: Estimation and Numerical Checks {#fit}
+
+### 3.1. Simulate a panel with known parameters {#simulate-panel}
+
+The example follows the Linear specification. Both equations contain the same
+two covariates, with coefficients one, and all three SDs equal one. The
+correlations are $\rho=-0.5$ and $\tau=0.5$:
+
+
+$$
+d_{it}=1\bigl(x_{it}+w_{it}+u_i+\varepsilon_{it}>0\bigr),
+$$
+
+$$
+y^*_{it}=x_{it}+w_{it}+v_i+\epsilon_{it}.
+$$
+
+We simulate 500 people over five occasions. Both covariates are independent
+standard normal variables, independent of the latent disturbances. The code
+retains unselected rows and records their outcomes as `NA`.
+
+```{r data}
+set.seed(100)
+N = 500L
+period = 5L
+n = N*period
+id = rep(1:N, each = period)
+u = rnorm(N)
+v = -0.5*u + sqrt(0.75)*rnorm(N)
+eps = rnorm(n)
+e = 0.5*eps + sqrt(0.75)*rnorm(n)
+w = rnorm(n)
+x = rnorm(n)
+d = as.integer(x + w + u[id] + eps > 0)
+y = x + w + v[id] + e
+y[d == 0] = NA
+dat = data.frame(id = id, time = rep(seq_len(period), N), x = x, w = w,
+                 d = d, y = y)
+```
+
+### 3.2. Fit the model and compare estimates {#interpret}
+
+Fit the equations jointly using 10-node GH integration.
+
+```{r selection-fit}
+fit = panel_select(
+  outcome = y ~ x + w,
+  selection = d ~ x + w,
+  data = dat,
+  id = "id",
+  family = "linear",
+  control = panel_control(quadrature = "gh", nodes = 10L))
+```
+
+Table 2 reports precomputed estimates from GH10, AGH10 and GL10 alongside the
+known parameters. The AGH and GL fits are not rerun when this vignette is built.
+For AGH or GL, keep `nodes = 10L` and change `quadrature` to `"agh"` or `"gl"`,
+respectively. Standard errors use the default OPG covariance.
+
+<!-- METHOD_COMPARISON_BEGIN -->
+::: {.table-scroll .method-comparison tabindex="0" role="region" aria-label="Parameter recovery and fitting times"}
+
+| Parameter | True value | GH10 | AGH10 | GL10 |
+|:---|---:|---:|---:|---:|
+| Selection intercept | 0 | -0.025<br>(0.059) | -0.025<br>(0.059) | -0.025<br>(0.059) |
+| Selection: $x$ | 1 | 1.047<br>(0.058) | 1.047<br>(0.058) | 1.047<br>(0.058) |
+| Selection: $w$ | 1 | 0.963<br>(0.053) | 0.963<br>(0.053) | 0.963<br>(0.053) |
+| Outcome intercept | 0 | 0.044<br>(0.140) | 0.044<br>(0.140) | 0.044<br>(0.140) |
+| Outcome: $x$ | 1 | 1.055<br>(0.068) | 1.055<br>(0.068) | 1.055<br>(0.068) |
+| Outcome: $w$ | 1 | 0.989<br>(0.060) | 0.989<br>(0.060) | 0.989<br>(0.060) |
+| Selection RE SD ($\delta$) | 1 | 1.037<br>(0.070) | 1.037<br>(0.070) | 1.037<br>(0.070) |
+| Outcome RE SD ($\lambda$) | 1 | 1.031<br>(0.054) | 1.031<br>(0.054) | 1.031<br>(0.054) |
+| Outcome error SD ($\sigma$) | 1 | 0.962<br>(0.037) | 0.962<br>(0.037) | 0.962<br>(0.037) |
+| Individual-effect correlation ($\rho$) | -0.5 | -0.435<br>(0.087) | -0.435<br>(0.087) | -0.435<br>(0.087) |
+| Error correlation ($\tau$) | 0.5 | 0.523<br>(0.152) | 0.523<br>(0.152) | 0.523<br>(0.152) |
+| Fitting time (seconds) | — | 1.02 | 1.39 | 646.43 |
+
+Table: Table 2. Parameter recovery and fitting time by integration method
+
+:::
+
+<!-- METHOD_COMPARISON_END -->
+
+<!-- RECOVERY_INTERPRETATION_BEGIN -->
+The three integration methods produce the same parameter estimates and standard errors to the reported precision. The estimated slopes and standard deviations are close to their true values, while the correlation estimates recover the opposing selection channels: negative dependence between individual effects and positive dependence between occasion-specific shocks.
+<!-- RECOVERY_INTERPRETATION_END -->
+
+### 3.3. Check and refine the fit {#integration-choices}
+
+<span id="choose-starting-values"></span>
+
+**Step 1. Check convergence and stationarity.** The optimizer should report convergence,
+and `Q_OPG` should be close to zero. The package warns when `Q_OPG > 0.1` by default.
+
+```{r numerical-checks}
+check_stationarity(fit)[c("optimizer_converged", "Q_OPG")]
+```
+
+A small `Q_OPG` indicates that the fitted numerical objective is close to stationary.
+Integration accuracy requires a separate check.
+
+**Step 2. Compare calculations with more nodes.** Re-evaluate the 10-node fit using
+20 nodes while holding the parameter estimates fixed:
+
+```{r quadrature-check}
+check_quadrature(fit, nodes = 20L)
+```
+
+Although the differences between the 10-node and 20-node GH calculations exceed the default comparison tolerances, refitting with 20 nodes changes the parameter estimates only slightly. To refine the fit, refit with 20 nodes and repeat the check using 30 nodes. If notable sensitivity persists, consider AGH or GL. Because GL applies the specified number of nodes within each integration segment, GL10 generally requires substantially more computation than GH10 or AGH10. GL10 or GL12 may be sufficient for many applications.
+ 
+**Step 3. Refit with more nodes if needed.** Use `update()` to fit at the higher order:
+
+```{r refine-integration, eval=FALSE}
+fit_more = update(fit, control = modifyList(fit$control, list(nodes = 20L)))
+coef(fit_more) - coef(fit)
+```
+
+`update()` uses the fitted coefficients as starting values and preserves the
+other controls. Compare the estimates, then repeat the checks on `fit_more`
+with a higher comparison order.
+
+## 4. Practical Modeling Considerations {#check}
 
 This section highlights several practical considerations while using this package.
 
--   As shown in [Bailey and Peng (2025)](https://www.ssrn.com/abstract=5475626), panel selection models typically achieve stronger identification than their cross-sectional counterparts.
+-   As shown in [Bailey and Peng (2025)](https://doi.org/10.2139/ssrn.5475626), panel selection models typically achieve stronger identification than their cross-sectional counterparts.
 
 -   The panel need not be balanced. Also, individuals are allowed to make different participation decisions at different time periods.
 
--   The covariates used in the first-stage and second-stage equations may differ, although excluding a variable from one stage typically requires theoretical justification. When in doubt, it is advisable to use the same set of covariates in both stages.
+-   The covariates used in the first-stage and second-stage equations may differ, although excluding a variable from one stage typically requires theoretical justification. 
 
--   The model allows the two correlation parameters $\rho$ and $\tau$ to be turned off separately or jointly.
-
--   Inputs and output formats for models imported from the [PanelCount](https://CRAN.R-project.org/package=PanelCount) package are somewhat different.
+-   The model allows the two correlation parameters $\rho$ and $\tau$ to be turned off separately or jointly. In `panel_select()`, use `fixed = c(cor_re = 0)` to set $\rho=0$, `fixed = c(cor_error = 0)` to set $\tau=0$, or `fixed = c(cor_re = 0, cor_error = 0)` to set both to zero. Fixing one correlation at zero can substantially speed up estimation, especially when $\tau=0$.
 
 -   When the outcome variable is observed regardless of participation, the [endogeneity](https://CRAN.R-project.org/package=endogeneity) package may be more appropriate, although it currently focuses on cross-sectional settings.
 
-## Citations
+For further details, see the help pages for [model fitting](../html/panel_select.html), [numerical controls](../html/panel_control.html), and [prediction](../html/predict.panelselect.html).
 
-Bailey, M., & Peng, J. (2025). A Random Effects Model of Non-Ignorable Nonresponse in Panel Survey Data. Available at SSRN <https://www.ssrn.com/abstract=5475626>
+<span id="predict"></span>
+<span id="update"></span>
 
-Peng, J., & Van den Bulte, C. (2024). Participation vs. Effectiveness in Sponsored Tweet Campaigns: A Quality-Quantity Conundrum. *Management Science*, 70(11):7345-8215. Available at <https://doi.org/10.1287/mnsc.2019.01897>
+## References
+
+Bailey, M., & Peng, J. (2025). A Random Effects Model of Non-Ignorable Nonresponse
+in Panel Survey Data. Available at SSRN <https://doi.org/10.2139/ssrn.5475626>
+
+Peng, J., & Van den Bulte, C. (2024). Participation vs. Effectiveness in Sponsored
+Tweet Campaigns: A Quality-Quantity Conundrum. *Management Science*, 70(11):7961-7983.
+Available at <https://doi.org/10.1287/mnsc.2019.01897>

@@ -1,23 +1,26 @@
 Package: PanelSelect
 Type: Package
 Title: Panel Sample Selection Models
-Version: 1.0.1
+Version: 2.0.0
 Authors@R: person(given = "Jing",
                     family = "Peng",
                     role = c("aut", "cre"),
                     email = "jing.peng@uconn.edu")
 Maintainer: Jing Peng <jing.peng@uconn.edu>
-Description: Extends the Heckman selection framework to panel data with individual random effects. The first stage models participation via a panel Probit specification, while the second stage can take a panel linear, Probit, Poisson, or Poisson log-normal form. Model details are provided in Bailey and Peng (2025) <doi:10.2139/ssrn.5475626> and Peng and Van den Bulte (2024) <doi:10.1287/mnsc.2019.01897>.
+Description: Fits sample selection models with continuous, binary, and count outcomes in panel and cross-sectional data. Model details are provided in
+    Bailey and Peng (2025) <doi:10.2139/ssrn.5475626> and Peng and Van den Bulte
+    (2024) <doi:10.1287/mnsc.2019.01897>.
 License: GPL (>= 3)
 Encoding: UTF-8
 VignetteBuilder: knitr
-Imports: Rcpp, PanelCount, pbivnorm, maxLik, statmod, MASS, data.table,
-        pbv
+Depends: R (>= 4.5.0)
+Imports: Rcpp, pbivnorm, statmod, stats, utils
 LinkingTo: Rcpp, RcppArmadillo
-Suggests: knitr, rmarkdown
-Config/roxygen2/version: 8.0.0
+Suggests: knitr, rmarkdown, testthat (>= 3.1.7), mvtnorm, maxLik
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.1
 NeedsCompilation: yes
-Packaged: 2026-08-26 21:13:12 UTC; pengj
+Packaged: 2026-10-29 07:30:28 UTC; pengj
 Author: Jing Peng [aut, cre]
 Repository: CRAN
-Date/Publication: 2026-08-27 05:10:46 UTC
+Date/Publication: 2026-10-29 08:40:16 UTC
